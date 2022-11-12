@@ -1,7 +1,23 @@
-
 use datex_core::compiler;
 
+mod command_line_args;
+use command_line_args::get_args;
+
+
+
+
 fn main() {
-    println!("Hello, world!");
-    println!("{}", datex_core::compiler::compile("1+2"));
+    let args = get_args();
+    println!("Hello DATEX!");
+
+    if args.file.is_some() {
+        println!("File: {}", args.file.unwrap())
+    }
+
+    repl();
+}
+
+
+fn repl(){
+
 }

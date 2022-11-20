@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.0.23", features = ["derive"] }
+lazy_static = "1.4.0"
 datex_core = { path = "../datex_core" }
+datex_cli_core = { path = "../datex_cli_core" }

@@ -1,13 +1,31 @@
-use clap::Parser;
+use clap::{Parser, Subcommand, Args};
 
-/// Simple program to greet a person
-#[derive(Parser, Debug)]
+
+#[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-pub struct Args {
-   #[arg(short, long)]
-   pub file: Option<String>,
+#[command(propagate_version = true)]
+pub struct Cli {
+    #[command(subcommand)]
+    command: Command,
 }
 
-pub fn get_args() -> Args {
-	return Args::parse();
+#[derive(Subcommand)]
+pub enum Command {
+    Run(Run),
+    Lsp(Lsp)
+}
+
+#[derive(Args)]
+pub struct Run {
+   pub file: Option<String>
+}
+
+#[derive(Args)]
+pub struct Lsp {
+}
+
+
+
+pub fn get_command() -> Command {
+	return Cli::parse().command;
 }

@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand, Args};
 
 
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None, bin_name = "datex")]
 #[command(propagate_version = true)]
 pub struct Cli {
     #[command(subcommand)]
@@ -27,5 +27,5 @@ pub struct Lsp {
 
 
 pub fn get_command() -> Command {
-	return Cli::parse().command;
+	Cli::parse().command
 }

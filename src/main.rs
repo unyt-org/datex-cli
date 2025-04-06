@@ -2,7 +2,6 @@ use datex_core::compiler::compile_body;
 use datex_core::runtime::{Context, Runtime};
 use rustyline::error::ReadlineError;
 use std::cell::RefCell;
-use std::io::{self, stdin, stdout, Write};
 use std::rc::Rc;
 
 mod command_line_args;

@@ -7,14 +7,11 @@ use datex_core::crypto::random::random_bytes_slice;
 use datex_core::datex_values::Pointer;
 use datex_core::runtime::Runtime;
 use ratatui::layout::{Constraint, Direction, Layout};
-use ratatui::widgets::Borders;
 use ratatui::{
-    buffer::Buffer,
     layout::Rect,
     style::Stylize,
-    symbols::border,
-    text::{Line, Text},
-    widgets::{Block, Paragraph, Widget},
+    text::Line,
+    widgets::Paragraph,
     DefaultTerminal, Frame,
 };
 
@@ -28,8 +25,8 @@ pub struct Workbench<'a> {
 impl<'a> Workbench<'a> {
     pub fn new(runtime: &Runtime) -> Workbench {
         // init the views
-        let metadata = Metadata { runtime: &runtime };
-        let comhub = ComHub { runtime: &runtime };
+        let metadata = Metadata { runtime };
+        let comhub = ComHub { runtime };
 
         Workbench {
             runtime,
@@ -94,10 +91,7 @@ impl<'a> Workbench<'a> {
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent) {
-        match key_event.code {
-            KeyCode::Char('q') => self.exit(),
-            _ => {}
-        }
+        if let KeyCode::Char('q') = key_event.code { self.exit() }
     }
 
     fn exit(&mut self) {

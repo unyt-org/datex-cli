@@ -1,6 +1,4 @@
-use std::io;
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use datex_core::runtime::Runtime;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::Borders;
@@ -8,10 +6,8 @@ use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::Stylize,
-    symbols::border,
     text::{Line, Text},
     widgets::{Block, Paragraph, Widget},
-    DefaultTerminal, Frame,
 };
 
 pub struct Metadata<'a> {

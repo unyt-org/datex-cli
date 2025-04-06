@@ -10,14 +10,14 @@ pub struct Backend {
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
-         Ok(InitializeResult {
-             capabilities: ServerCapabilities {
-                 hover_provider: Some(HoverProviderCapability::Simple(true)),
-                 completion_provider: Some(CompletionOptions::default()),
-                 ..Default::default()
-             },
-             ..Default::default()
-         })
+        Ok(InitializeResult {
+            capabilities: ServerCapabilities {
+                hover_provider: Some(HoverProviderCapability::Simple(true)),
+                completion_provider: Some(CompletionOptions::default()),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
     }
 
     async fn initialized(&self, _: InitializedParams) {
@@ -30,18 +30,18 @@ impl LanguageServer for Backend {
         Ok(())
     }
 
-	async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
-		self.client
-			.log_message(MessageType::INFO, "server initialized!")
-			.await;
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        self.client
+            .log_message(MessageType::INFO, "server initialized!")
+            .await;
 
-		Ok(Some(Hover {
-			contents: HoverContents::Markup(MarkupContent {
-				kind: MarkupKind::Markdown,
-				value: "# Example\n123".to_string()
-			}),
-			range: None
-		}))
+        Ok(Some(Hover {
+            contents: HoverContents::Markup(MarkupContent {
+                kind: MarkupKind::Markdown,
+                value: "# Example\n123".to_string(),
+            }),
+            range: None,
+        }))
     }
 }
 

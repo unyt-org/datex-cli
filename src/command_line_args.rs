@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand, Args};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None, bin_name = "datex")]
@@ -17,17 +17,14 @@ pub enum Subcommands {
 
 #[derive(Args)]
 pub struct Run {
-   pub file: Option<String>
+    pub file: Option<String>,
 }
 
 #[derive(Args)]
-pub struct Lsp {
-}
+pub struct Lsp {}
 
 #[derive(Args)]
-pub struct Repl {
-}
-
+pub struct Repl {}
 
 pub fn get_command() -> Option<Subcommands> {
     Cli::parse().command

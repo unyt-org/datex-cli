@@ -1,9 +1,9 @@
-use std::cell::RefCell;
-use std::io::{stdout, self, Write, stdin};
-use std::rc::Rc;
 use datex_core::compiler::compile_body;
 use datex_core::runtime::{Context, Runtime};
 use rustyline::error::ReadlineError;
+use std::cell::RefCell;
+use std::io::{self, stdin, stdout, Write};
+use std::rc::Rc;
 
 mod command_line_args;
 mod lsp;
@@ -25,7 +25,7 @@ async fn main() {
 
                 let (service, socket) = LspService::new(|client| Backend { client });
                 Server::new(stdin, stdout, socket).serve(service).await;
-            },
+            }
             Subcommands::Run(run) => {
                 if run.file.is_some() {
                     println!("File: {}", run.file.unwrap())
@@ -60,10 +60,8 @@ fn repl() -> Result<(), ReadlineError> {
                 }
                 let dxb = dxb.unwrap();
                 println!("Compiled: {:?}", dxb);
-            },
-            Err(_) => {
-                break
-            },
+            }
+            Err(_) => break,
         }
     }
 

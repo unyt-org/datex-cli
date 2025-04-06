@@ -2,6 +2,8 @@ use std::io;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use datex_core::runtime::Runtime;
+use ratatui::style::{Color, Style};
+use ratatui::widgets::Borders;
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -11,8 +13,6 @@ use ratatui::{
     widgets::{Block, Paragraph, Widget},
     DefaultTerminal, Frame,
 };
-use ratatui::style::{Color, Style};
-use ratatui::widgets::Borders;
 
 pub struct Metadata<'a> {
     pub runtime: &'a Runtime,
@@ -32,7 +32,13 @@ impl<'a> Widget for &Metadata<'a> {
             ]),
             Line::from(vec![
                 "Allocated pointers: ".into(),
-                self.runtime.memory.borrow().get_pointer_ids().len().to_string().bold(),
+                self.runtime
+                    .memory
+                    .borrow()
+                    .get_pointer_ids()
+                    .len()
+                    .to_string()
+                    .bold(),
             ]),
         ];
 

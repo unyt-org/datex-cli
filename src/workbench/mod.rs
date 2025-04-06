@@ -1,9 +1,9 @@
-use std::io;
-use datex_core::runtime::Runtime;
 use crate::workbench::workbench::Workbench;
+use datex_core::runtime::Runtime;
+use std::io;
 
-mod workbench;
 mod views;
+mod workbench;
 
 pub fn start_workbench(runtime: Runtime) -> io::Result<()> {
     let mut terminal = ratatui::init();

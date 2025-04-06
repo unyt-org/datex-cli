@@ -1,11 +1,11 @@
 use datex_core::compiler::compile_body;
+use datex_core::crypto::crypto_native::CryptoNative;
+use datex_core::runtime::global_context::{set_global_context, GlobalContext};
 use datex_core::runtime::{Context, Runtime};
 use rustyline::error::ReadlineError;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use datex_core::crypto::crypto_native::CryptoNative;
-use datex_core::runtime::global_context::{set_global_context, GlobalContext};
 
 mod command_line_args;
 mod lsp;
@@ -40,11 +40,9 @@ async fn main() {
                 repl();
             }
             Subcommands::Workbench(_) => {
-                set_global_context(
-                    GlobalContext {
-                        crypto: Arc::new(Mutex::new(CryptoNative)),
-                    }
-                );
+                set_global_context(GlobalContext {
+                    crypto: Arc::new(Mutex::new(CryptoNative)),
+                });
                 let ctx = Context::default();
                 let runtime = Runtime::new(Rc::new(RefCell::new(ctx)));
                 workbench::start_workbench(runtime).unwrap()

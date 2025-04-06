@@ -1,9 +1,13 @@
 use std::io;
 
+use crate::workbench::views::comhub::ComHub;
+use crate::workbench::views::metadata::Metadata;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use datex_core::crypto::random::random_bytes_slice;
 use datex_core::datex_values::Pointer;
 use datex_core::runtime::Runtime;
+use ratatui::layout::{Constraint, Direction, Layout};
+use ratatui::widgets::Borders;
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -13,10 +17,6 @@ use ratatui::{
     widgets::{Block, Paragraph, Widget},
     DefaultTerminal, Frame,
 };
-use ratatui::layout::{Constraint, Direction, Layout};
-use ratatui::widgets::Borders;
-use crate::workbench::views::comhub::ComHub;
-use crate::workbench::views::metadata::Metadata;
 
 pub struct Workbench<'a> {
     runtime: &'a Runtime,
@@ -26,16 +26,10 @@ pub struct Workbench<'a> {
 }
 
 impl<'a> Workbench<'a> {
-
     pub fn new(runtime: &Runtime) -> Workbench {
-
         // init the views
-        let metadata = Metadata {
-            runtime: &runtime,
-        };
-        let comhub = ComHub {
-            runtime: &runtime,
-        };
+        let metadata = Metadata { runtime: &runtime };
+        let comhub = ComHub { runtime: &runtime };
 
         Workbench {
             runtime,
@@ -53,16 +47,15 @@ impl<'a> Workbench<'a> {
 
             // add ptr to the runtime
             let id = random_bytes_slice::<26>();
-            self.runtime.memory.borrow_mut().store_pointer(
-                id,
-                Pointer::from_id(id.to_vec())
-            );
+            self.runtime
+                .memory
+                .borrow_mut()
+                .store_pointer(id, Pointer::from_id(id.to_vec()));
         }
         Ok(())
     }
 
     fn draw(&self, frame: &mut Frame) {
-
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![
@@ -76,27 +69,18 @@ impl<'a> Workbench<'a> {
         self.draw_title(frame, layout[0]);
 
         // draw views
-        frame.render_widget(
-            &self.metadata,
-            layout[1]);
-        frame.render_widget(
-            &self.comhub,
-            layout[2]);
+        frame.render_widget(&self.metadata, layout[1]);
+        frame.render_widget(&self.comhub, layout[2]);
     }
 
     fn draw_title(&self, frame: &mut Frame, area: Rect) {
         let title = Line::from(vec![
             " DATEX Workbench ".bold(),
-            format!(
-                "v{} ",
-                self.runtime.version
-            ).dim()
-        ]).black();
+            format!("v{} ", self.runtime.version).dim(),
+        ])
+        .black();
 
-        frame.render_widget(
-            Paragraph::new(title).on_white(),
-            area,
-        );
+        frame.render_widget(Paragraph::new(title).on_white(), area);
     }
 
     fn handle_events(&mut self) -> io::Result<()> {

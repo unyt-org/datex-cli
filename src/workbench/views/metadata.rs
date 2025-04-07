@@ -1,4 +1,3 @@
-
 use datex_core::runtime::Runtime;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::Borders;

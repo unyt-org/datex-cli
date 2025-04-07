@@ -1,4 +1,3 @@
-
 use datex_core::runtime::Runtime;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::Borders;
@@ -16,6 +15,8 @@ pub struct ComHub<'a> {
 
 impl<'a> Widget for &ComHub<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        let metadata = self.runtime.com_hub.borrow().get_metadata();
+
         let block = Block::default()
             .title(" ComHub ")
             .borders(Borders::ALL)
@@ -24,23 +25,11 @@ impl<'a> Widget for &ComHub<'a> {
         let lines = vec![
             Line::from(vec![
                 "Registered Interfaces: ".into(),
-                self.runtime
-                    .com_hub
-                    .borrow()
-                    .interfaces
-                    .len()
-                    .to_string()
-                    .bold(),
+                metadata.interfaces.len().to_string().into(),
             ]),
             Line::from(vec![
                 "Connected Sockets: ".into(),
-                self.runtime
-                    .com_hub
-                    .borrow()
-                    .sockets
-                    .len()
-                    .to_string()
-                    .bold(),
+                metadata.endpoint_sockets.len().to_string().into(),
             ]),
         ];
 

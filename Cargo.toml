@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.0.23", features = ["derive"] }
 lazy_static = "1.4.0"
-datex-core = { path = "./datex-core" }
+datex-core = { path = "../datex-core-js/rs-lib/datex-core", features = ["debug"]}
 
 serde_json = "1.0.78"
 tokio = { version = "1.17.0", features = ["full"] }

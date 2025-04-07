@@ -8,11 +8,7 @@ use datex_core::datex_values::Pointer;
 use datex_core::runtime::Runtime;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::{
-    layout::Rect,
-    style::Stylize,
-    text::Line,
-    widgets::Paragraph,
-    DefaultTerminal, Frame,
+    layout::Rect, style::Stylize, text::Line, widgets::Paragraph, DefaultTerminal, Frame,
 };
 
 pub struct Workbench<'a> {
@@ -91,7 +87,9 @@ impl<'a> Workbench<'a> {
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent) {
-        if let KeyCode::Char('q') = key_event.code { self.exit() }
+        if let KeyCode::Char('q') = key_event.code {
+            self.exit()
+        }
     }
 
     fn exit(&mut self) {

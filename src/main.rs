@@ -1,11 +1,14 @@
 use datex_core::compiler::compile_body;
 use datex_core::crypto::crypto_native::CryptoNative;
 use datex_core::runtime::global_context::{set_global_context, GlobalContext};
-use datex_core::runtime::{Context, Runtime};
+use datex_core::runtime::{Runtime};
 use rustyline::error::ReadlineError;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
+use datex_core::datex_values::Endpoint;
+use datex_core::utils::time_native::TimeNative;
+use rustyline::KeyCode::End;
 
 mod command_line_args;
 mod lsp;
@@ -33,8 +36,7 @@ async fn main() {
                 if run.file.is_some() {
                     println!("File: {}", run.file.unwrap())
                 }
-                let ctx = Context::default();
-                let runtime = Runtime::new(Rc::new(RefCell::new(ctx)));
+                let runtime = Runtime::new(Endpoint::default());
             }
             Subcommands::Repl(_) => {
                 repl();
@@ -42,9 +44,9 @@ async fn main() {
             Subcommands::Workbench(_) => {
                 set_global_context(GlobalContext {
                     crypto: Arc::new(Mutex::new(CryptoNative)),
+                    time: Arc::new(Mutex::new(TimeNative)),
                 });
-                let ctx = Context::default();
-                let runtime = Runtime::new(Rc::new(RefCell::new(ctx)));
+                let runtime = Runtime::new(Endpoint::default());
                 workbench::start_workbench(runtime).unwrap()
             }
         }
@@ -56,8 +58,7 @@ async fn main() {
 }
 
 fn repl() -> Result<(), ReadlineError> {
-    let ctx = Context::default();
-    let runtime = Runtime::new(Rc::new(RefCell::new(ctx)));
+    let runtime = Runtime::new(Endpoint::default());
 
     let mut rl = rustyline::DefaultEditor::new()?;
     loop {

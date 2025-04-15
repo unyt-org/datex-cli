@@ -1,5 +1,6 @@
+use std::cell::RefCell;
 use std::io;
-
+use std::rc::Rc;
 use crate::workbench::views::comhub::ComHub;
 use crate::workbench::views::metadata::Metadata;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
@@ -11,18 +12,18 @@ use ratatui::{
     layout::Rect, style::Stylize, text::Line, widgets::Paragraph, DefaultTerminal, Frame,
 };
 
-pub struct Workbench<'a> {
-    runtime: &'a Runtime,
-    metadata: Metadata<'a>,
-    comhub: ComHub<'a>,
+pub struct Workbench {
+    runtime: Rc<RefCell<Runtime>>,
+    metadata: Metadata,
+    comhub: ComHub,
     exit: bool,
 }
 
-impl<'a> Workbench<'a> {
-    pub fn new(runtime: &Runtime) -> Workbench {
+impl Workbench {
+    pub fn new(runtime: Rc<RefCell<Runtime>>) -> Workbench {
         // init the views
-        let metadata = Metadata { runtime };
-        let comhub = ComHub { runtime };
+        let metadata = Metadata { runtime: runtime.clone() };
+        let comhub = ComHub { runtime: runtime.clone() };
 
         Workbench {
             runtime,
@@ -38,9 +39,11 @@ impl<'a> Workbench<'a> {
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_events()?;
 
+            let runtime = self.runtime.borrow();
+
             // add ptr to the runtime
             let id = random_bytes_slice::<26>();
-            self.runtime
+            runtime
                 .memory
                 .borrow_mut()
                 .store_pointer(id, Pointer::from_id(id.to_vec()));
@@ -67,9 +70,10 @@ impl<'a> Workbench<'a> {
     }
 
     fn draw_title(&self, frame: &mut Frame, area: Rect) {
+        let runtime = self.runtime.borrow();
         let title = Line::from(vec![
             " DATEX Workbench ".bold(),
-            format!("v{} ", self.runtime.version).dim(),
+            format!("v{} ", runtime.version).dim(),
         ])
         .black();
 

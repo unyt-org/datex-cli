@@ -9,6 +9,7 @@ use std::sync::{Arc, Mutex};
 use datex_core::datex_values::Endpoint;
 use datex_core::utils::time_native::TimeNative;
 use rustyline::KeyCode::End;
+use tokio::task::{spawn_local, LocalSet};
 
 mod command_line_args;
 mod lsp;
@@ -42,12 +43,8 @@ async fn main() {
                 repl();
             }
             Subcommands::Workbench(_) => {
-                set_global_context(GlobalContext {
-                    crypto: Arc::new(Mutex::new(CryptoNative)),
-                    time: Arc::new(Mutex::new(TimeNative)),
-                });
-                let runtime = Runtime::new(Endpoint::default());
-                workbench::start_workbench(runtime).unwrap()
+                let local = LocalSet::new();
+                local.run_until(workbench()).await;
             }
         }
     }
@@ -55,6 +52,16 @@ async fn main() {
     else {
         repl();
     }
+}
+
+async fn workbench() {
+    set_global_context(GlobalContext {
+        crypto: Arc::new(Mutex::new(CryptoNative)),
+        time: Arc::new(Mutex::new(TimeNative)),
+    });
+    let runtime = Rc::new(RefCell::new(Runtime::new(Endpoint::random())));
+    runtime.borrow().start().await;
+    workbench::start_workbench(runtime).unwrap()
 }
 
 fn repl() -> Result<(), ReadlineError> {

@@ -8,6 +8,7 @@ use std::future;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use datex_core::datex_values::Endpoint;
+use datex_core::network::com_interfaces::default_com_interfaces::websocket::websocket_server_native_interface::WebSocketServerNativeInterface;
 use datex_core::utils::time_native::TimeNative;
 use rustyline::KeyCode::End;
 use tokio::task::{spawn_local, LocalSet};
@@ -62,11 +63,12 @@ async fn workbench() {
     });
     let runtime = Rc::new(RefCell::new(Runtime::new(Endpoint::random())));
     runtime.borrow().start();
-    spawn_local(async move {
-        workbench::start_workbench(runtime).await.unwrap();
-    });
 
-    future::pending::<()>().await;
+    // add socket server interface
+    let socket_interface = WebSocketServerNativeInterface::open(1234).await.unwrap();
+    runtime.borrow().com_hub.lock().unwrap().add_interface(Rc::new(RefCell::new(socket_interface))).unwrap();
+
+    workbench::start_workbench(runtime).await.unwrap();
 }
 
 fn repl() -> Result<(), ReadlineError> {

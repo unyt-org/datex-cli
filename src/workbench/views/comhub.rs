@@ -36,13 +36,26 @@ impl Widget for &ComHub {
             ]),
         ];
 
+        // add newline
+        lines.push(Line::from(vec!["".into()]));
+
         // iterate interfaces
-        for (i, interface) in metadata.interfaces.iter().enumerate() {
+        for (_, interface) in metadata.interfaces.iter().enumerate() {
             lines.push(Line::from(vec![
-                format!("Interface {}: ", i).into(),
-                interface.properties.name.clone()
-                    .map_or_else(|| "None".into(), |i| i.to_string().into()),
+                match &interface.properties.name {
+                    Some(name) => format!("{} ({})", interface.properties.channel, name),
+                    None => format!("{}", interface.properties.channel),
+                }.to_string().bold()
             ]));
+
+            // iterate sockets
+            for socket in interface.sockets.iter() {
+                lines.push(Line::from(vec![
+                    "  ⬤".to_string().green(),
+                    " ──▶ ".to_string().into(),
+                    format!("{}", socket.endpoint).into(),
+                ]));
+            }
         }
 
         Paragraph::new(Text::from_iter(lines))

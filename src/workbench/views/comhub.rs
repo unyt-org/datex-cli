@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use datex_core::network::com_interfaces::com_interface_properties::InterfaceDirection;
 use datex_core::runtime::Runtime;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::Borders;
@@ -52,7 +53,11 @@ impl Widget for &ComHub {
             for socket in interface.sockets.iter() {
                 lines.push(Line::from(vec![
                     "  ⬤".to_string().green(),
-                    " ──▶ ".to_string().into(),
+                    match socket.direction {
+                        InterfaceDirection::IN => " ──▶ ".to_string().into(),
+                        InterfaceDirection::OUT => " ◀── ".to_string().into(),
+                        InterfaceDirection::IN_OUT => " ◀──▶ ".to_string().into(),
+                    },
                     format!("{}", socket.endpoint).into(),
                 ]));
             }

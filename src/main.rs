@@ -4,6 +4,7 @@ use datex_core::runtime::global_context::{set_global_context, GlobalContext};
 use datex_core::runtime::{Runtime};
 use rustyline::error::ReadlineError;
 use std::cell::RefCell;
+use std::future;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use datex_core::datex_values::Endpoint;
@@ -60,8 +61,12 @@ async fn workbench() {
         time: Arc::new(Mutex::new(TimeNative)),
     });
     let runtime = Rc::new(RefCell::new(Runtime::new(Endpoint::random())));
-    runtime.borrow().start().await;
-    workbench::start_workbench(runtime).unwrap()
+    runtime.borrow().start();
+    spawn_local(async move {
+        workbench::start_workbench(runtime).await.unwrap();
+    });
+
+    future::pending::<()>().await;
 }
 
 fn repl() -> Result<(), ReadlineError> {

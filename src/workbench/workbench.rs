@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::io;
 use std::rc::Rc;
+use std::time::Duration;
 use crate::workbench::views::comhub::ComHub;
 use crate::workbench::views::metadata::Metadata;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
@@ -11,6 +12,7 @@ use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::{
     layout::Rect, style::Stylize, text::Line, widgets::Paragraph, DefaultTerminal, Frame,
 };
+use tokio::task::yield_now;
 
 pub struct Workbench {
     runtime: Rc<RefCell<Runtime>>,
@@ -34,7 +36,7 @@ impl Workbench {
     }
 
     /// runs the application's main loop until the user quits
-    pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
+    pub async fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while !self.exit {
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_events()?;
@@ -47,6 +49,8 @@ impl Workbench {
                 .memory
                 .borrow_mut()
                 .store_pointer(id, Pointer::from_id(id.to_vec()));
+
+            yield_now().await; // let other tasks run
         }
         Ok(())
     }
@@ -81,12 +85,17 @@ impl Workbench {
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
-        match event::read()? {
-            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                self.handle_key_event(key_event)
+        match event::poll(Duration::from_millis(10)) {
+            Ok(true) => {
+                match event::read()? {
+                    Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                        self.handle_key_event(key_event)
+                    }
+                    _ => {}
+                };
             }
             _ => {}
-        };
+        }
         Ok(())
     }
 

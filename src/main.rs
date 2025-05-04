@@ -1,6 +1,6 @@
 use datex_core::compiler::compile_body;
 use datex_core::crypto::crypto_native::CryptoNative;
-use datex_core::runtime::global_context::{set_global_context, GlobalContext};
+use datex_core::runtime::global_context::{set_global_context, DebugFlags, GlobalContext};
 use datex_core::runtime::{Runtime};
 use rustyline::error::ReadlineError;
 use std::cell::RefCell;
@@ -8,6 +8,7 @@ use std::future;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use datex_core::datex_values::Endpoint;
+use datex_core::network::com_hub::InterfacePriority;
 use datex_core::network::com_interfaces::default_com_interfaces::websocket::websocket_server_native_interface::WebSocketServerNativeInterface;
 use datex_core::utils::time_native::TimeNative;
 use rustyline::KeyCode::End;
@@ -60,13 +61,14 @@ async fn workbench() {
     set_global_context(GlobalContext {
         crypto: Arc::new(Mutex::new(CryptoNative)),
         time: Arc::new(Mutex::new(TimeNative)),
+        debug_flags: DebugFlags::default(),
     });
     let runtime = Rc::new(RefCell::new(Runtime::new(Endpoint::random())));
-    runtime.borrow().start();
+    runtime.borrow().start().await;
 
     // add socket server interface
-    let socket_interface = WebSocketServerNativeInterface::open(1234).await.unwrap();
-    runtime.borrow().com_hub.lock().unwrap().add_interface(Rc::new(RefCell::new(socket_interface))).unwrap();
+    let socket_interface = WebSocketServerNativeInterface::new(1234).unwrap();
+    runtime.borrow().com_hub.add_interface(Rc::new(RefCell::new(socket_interface)), InterfacePriority::Priority(1)).unwrap();
 
     workbench::start_workbench(runtime).await.unwrap();
 }

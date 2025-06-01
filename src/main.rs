@@ -88,13 +88,17 @@ fn repl() -> Result<(), ReadlineError> {
                     continue;
                 }
                 let dxb = dxb.unwrap();
-                let decompiled = decompile_body(&dxb, DecompileOptions::default());
+                let decompiled = decompile_body(&dxb, DecompileOptions {
+                    formatted: true,
+                    colorized: true,
+                    resolve_slots: true,
+                });
                 if let Err(e) = decompiled {
                     println!("Decompile Error: {:?}", e);
                     continue;
                 }
                 let decompiled = decompiled.unwrap();
-                println!("Decompiled: {:?}", decompiled);
+                println!("Decompiled: {}", decompiled);
             }
             Err(_) => break,
         }

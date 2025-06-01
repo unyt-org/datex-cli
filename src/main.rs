@@ -1,4 +1,3 @@
-use datex_core::compiler::compile_body;
 use datex_core::crypto::crypto_native::CryptoNative;
 use datex_core::runtime::global_context::{set_global_context, DebugFlags, GlobalContext};
 use datex_core::runtime::{Runtime};
@@ -7,7 +6,9 @@ use std::cell::RefCell;
 use std::future;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use datex_core::datex_values::Endpoint;
+use datex_core::compiler::bytecode::compile_script;
+use datex_core::datex_values::core_values::endpoint::Endpoint;
+use datex_core::decompiler::{decompile_body, DecompileOptions};
 use datex_core::network::com_hub::InterfacePriority;
 use datex_core::network::com_interfaces::default_com_interfaces::websocket::websocket_server_native_interface::WebSocketServerNativeInterface;
 use datex_core::utils::time_native::TimeNative;
@@ -81,13 +82,19 @@ fn repl() -> Result<(), ReadlineError> {
         let readline = rl.readline("> ");
         match readline {
             Ok(line) => {
-                let dxb = compile_body(&line);
+                let dxb = compile_script(&line);
                 if let Err(e) = dxb {
                     println!("Compile Error: {:?}", e);
                     continue;
                 }
                 let dxb = dxb.unwrap();
-                println!("Compiled: {:?}", dxb);
+                let decompiled = decompile_body(&dxb, DecompileOptions::default());
+                if let Err(e) = decompiled {
+                    println!("Decompile Error: {:?}", e);
+                    continue;
+                }
+                let decompiled = decompiled.unwrap();
+                println!("Decompiled: {:?}", decompiled);
             }
             Err(_) => break,
         }

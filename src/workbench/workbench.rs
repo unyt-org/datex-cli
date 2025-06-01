@@ -6,7 +6,7 @@ use crate::workbench::views::comhub::ComHub;
 use crate::workbench::views::metadata::Metadata;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use datex_core::crypto::random::random_bytes_slice;
-use datex_core::datex_values::Pointer;
+use datex_core::datex_values_old::Pointer;
 use datex_core::runtime::Runtime;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::{

@@ -8,7 +8,7 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use datex_core::compiler::bytecode::compile_script;
 use datex_core::datex_values::core_values::endpoint::Endpoint;
-use datex_core::decompiler::{add_syntax_highlighting, decompile_body, DecompileOptions};
+use datex_core::decompiler::{apply_syntax_highlighting, decompile_body, DecompileOptions};
 use datex_core::network::com_hub::InterfacePriority;
 use datex_core::network::com_interfaces::default_com_interfaces::websocket::websocket_server_native_interface::WebSocketServerNativeInterface;
 use datex_core::utils::time_native::TimeNative;
@@ -85,7 +85,7 @@ struct DatexSyntaxHelper;
 
 impl Highlighter for DatexSyntaxHelper {
     fn highlight<'l>(&self, line: &'l str, _pos: usize) -> std::borrow::Cow<'l, str> {
-        std::borrow::Cow::Owned(add_syntax_highlighting(line.to_string()).unwrap())
+        std::borrow::Cow::Owned(apply_syntax_highlighting(line.to_string()).unwrap())
     }
     fn highlight_char(&self, line: &str, pos: usize, kind: CmdKind) -> bool {
         true

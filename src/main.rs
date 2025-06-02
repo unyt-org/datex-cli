@@ -8,11 +8,17 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use datex_core::compiler::bytecode::compile_script;
 use datex_core::datex_values::core_values::endpoint::Endpoint;
-use datex_core::decompiler::{decompile_body, DecompileOptions};
+use datex_core::decompiler::{add_syntax_highlighting, decompile_body, DecompileOptions};
 use datex_core::network::com_hub::InterfacePriority;
 use datex_core::network::com_interfaces::default_com_interfaces::websocket::websocket_server_native_interface::WebSocketServerNativeInterface;
 use datex_core::utils::time_native::TimeNative;
+use rustyline::completion::Completer;
+use rustyline::config::Configurer;
+use rustyline::{Cmd, Helper, KeyEvent};
+use rustyline::highlight::{CmdKind, Highlighter};
+use rustyline::hint::Hinter;
 use rustyline::KeyCode::End;
+use rustyline::validate::{ValidationContext, ValidationResult, Validator};
 use tokio::task::{spawn_local, LocalSet};
 
 mod command_line_args;
@@ -74,10 +80,42 @@ async fn workbench() {
     workbench::start_workbench(runtime).await.unwrap();
 }
 
+
+struct DatexSyntaxHelper;
+
+impl Highlighter for DatexSyntaxHelper {
+    fn highlight<'l>(&self, line: &'l str, _pos: usize) -> std::borrow::Cow<'l, str> {
+        std::borrow::Cow::Owned(add_syntax_highlighting(line.to_string()).unwrap())
+    }
+    fn highlight_char(&self, line: &str, pos: usize, kind: CmdKind) -> bool {
+        true
+    }
+}
+
+impl Validator for DatexSyntaxHelper {
+    fn validate(&self, ctx: &mut ValidationContext) -> rustyline::Result<ValidationResult> {
+        Ok(ValidationResult::Valid(None))
+    }
+    fn validate_while_typing(&self) -> bool {
+        true
+    }
+}
+impl Completer for DatexSyntaxHelper {
+    type Candidate = String;
+}
+impl Hinter for DatexSyntaxHelper {
+    type Hint = String;
+}
+impl Helper for DatexSyntaxHelper {}
+
 fn repl() -> Result<(), ReadlineError> {
     let runtime = Runtime::new(Endpoint::default());
 
-    let mut rl = rustyline::DefaultEditor::new()?;
+    let mut rl = rustyline::Editor::<DatexSyntaxHelper, _>::new()?;
+    rl.set_helper(Some(DatexSyntaxHelper));
+    rl.enable_bracketed_paste(true);
+    rl.set_auto_add_history(true);
+
     loop {
         let readline = rl.readline("> ");
         match readline {

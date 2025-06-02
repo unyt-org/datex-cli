@@ -6,6 +6,15 @@
 ```shell
 datex
 ```
+Alternatively, you can also use the `repl` subcommand:
+```shell
+datex repl
+```
+
+To show debug information, run the `repl` subcommand with the `--verbose` or `-v` flag:
+```shell
+datex repl -v
+```
 
 ### Running a DATEX file
 ```shell

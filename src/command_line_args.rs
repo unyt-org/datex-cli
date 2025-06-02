@@ -25,7 +25,11 @@ pub struct Run {
 pub struct Lsp {}
 
 #[derive(Args)]
-pub struct Repl {}
+pub struct Repl {
+    /// Verbose mode for debugging
+    #[arg(short, long)]
+    pub verbose: bool,
+}
 
 #[derive(Args)]
 pub struct Workbench {}

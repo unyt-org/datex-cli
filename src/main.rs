@@ -1,33 +1,31 @@
 use datex_core::crypto::crypto_native::CryptoNative;
 use datex_core::runtime::global_context::{set_global_context, DebugFlags, GlobalContext};
-use datex_core::runtime::{Runtime};
-use rustyline::error::ReadlineError;
+use datex_core::runtime::Runtime;
 use std::cell::RefCell;
-use std::future;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use datex_core::compiler::bytecode::compile_script;
 use datex_core::datex_values::core_values::endpoint::Endpoint;
-use datex_core::decompiler::{apply_syntax_highlighting, decompile_body, DecompileOptions};
 use datex_core::network::com_hub::InterfacePriority;
 use datex_core::network::com_interfaces::default_com_interfaces::websocket::websocket_server_native_interface::WebSocketServerNativeInterface;
 use datex_core::utils::time_native::TimeNative;
 use rustyline::completion::Completer;
 use rustyline::config::Configurer;
-use rustyline::{Cmd, Helper, KeyEvent};
-use rustyline::highlight::{CmdKind, Highlighter};
+use rustyline::Helper;
+use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
-use rustyline::KeyCode::End;
-use rustyline::validate::{ValidationContext, ValidationResult, Validator};
-use tokio::task::{spawn_local, LocalSet};
+use rustyline::validate::Validator;
+use tokio::task::LocalSet;
 
 mod command_line_args;
 mod lsp;
 mod workbench;
+mod repl;
+
 use command_line_args::{get_command, Subcommands};
 use tower_lsp::{LspService, Server};
-
+use crate::command_line_args::Repl;
 use crate::lsp::Backend;
+use crate::repl::{repl, ReplOptions};
 
 #[tokio::main]
 async fn main() {
@@ -49,8 +47,9 @@ async fn main() {
                 }
                 let runtime = Runtime::new(Endpoint::default());
             }
-            Subcommands::Repl(_) => {
-                repl();
+            Subcommands::Repl(Repl{verbose}) => {
+                let options = ReplOptions {verbose};
+                repl(options).unwrap();
             }
             Subcommands::Workbench(_) => {
                 let local = LocalSet::new();
@@ -60,7 +59,7 @@ async fn main() {
     }
     // run REPL if no command is provided
     else {
-        repl();
+        repl(ReplOptions::default()).unwrap();
     }
 }
 
@@ -80,67 +79,3 @@ async fn workbench() {
     workbench::start_workbench(runtime).await.unwrap();
 }
 
-
-struct DatexSyntaxHelper;
-
-impl Highlighter for DatexSyntaxHelper {
-    fn highlight<'l>(&self, line: &'l str, _pos: usize) -> std::borrow::Cow<'l, str> {
-        std::borrow::Cow::Owned(apply_syntax_highlighting(line.to_string()).unwrap())
-    }
-    fn highlight_char(&self, line: &str, pos: usize, kind: CmdKind) -> bool {
-        true
-    }
-}
-
-impl Validator for DatexSyntaxHelper {
-    fn validate(&self, ctx: &mut ValidationContext) -> rustyline::Result<ValidationResult> {
-        Ok(ValidationResult::Valid(None))
-    }
-    fn validate_while_typing(&self) -> bool {
-        true
-    }
-}
-impl Completer for DatexSyntaxHelper {
-    type Candidate = String;
-}
-impl Hinter for DatexSyntaxHelper {
-    type Hint = String;
-}
-impl Helper for DatexSyntaxHelper {}
-
-fn repl() -> Result<(), ReadlineError> {
-    let runtime = Runtime::new(Endpoint::default());
-
-    let mut rl = rustyline::Editor::<DatexSyntaxHelper, _>::new()?;
-    rl.set_helper(Some(DatexSyntaxHelper));
-    rl.enable_bracketed_paste(true);
-    rl.set_auto_add_history(true);
-
-    loop {
-        let readline = rl.readline("> ");
-        match readline {
-            Ok(line) => {
-                let dxb = compile_script(&line);
-                if let Err(e) = dxb {
-                    println!("Compile Error: {:?}", e);
-                    continue;
-                }
-                let dxb = dxb.unwrap();
-                let decompiled = decompile_body(&dxb, DecompileOptions {
-                    formatted: true,
-                    colorized: true,
-                    resolve_slots: true,
-                });
-                if let Err(e) = decompiled {
-                    println!("Decompile Error: {:?}", e);
-                    continue;
-                }
-                let decompiled = decompiled.unwrap();
-                println!("Decompiled: {}", decompiled);
-            }
-            Err(_) => break,
-        }
-    }
-
-    Ok(())
-}

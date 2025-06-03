@@ -1,4 +1,4 @@
-use datex_core::compiler::bytecode::compile_script;
+use datex_core::compiler::bytecode::{compile_script, compile_template};
 use datex_core::datex_values::core_values::endpoint::Endpoint;
 use datex_core::decompiler::{apply_syntax_highlighting, decompile_body, DecompileOptions};
 use datex_core::runtime::execution::{execute_dxb, ExecutionOptions};
@@ -88,7 +88,14 @@ pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
                 if let Err(e) = result {
                     eprintln!("\x1b[31m[Execution Error] {e}\x1b[0m");
                 } else {
-                    println!("\x1b[32m[Execution Success]\x1b[0m");
+                    // compile and decompile value container for printing
+                    let compiled_value = compile_template("?", vec![result.unwrap()]).unwrap();
+                    let decompiled_value = decompile_body(&compiled_value, DecompileOptions {
+                        formatted: true,
+                        colorized: true,
+                        resolve_slots: true,
+                    }).unwrap();
+                    println!("< {decompiled_value}");
                 }
 
             }

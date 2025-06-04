@@ -87,9 +87,10 @@ pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
                 let result = execute_dxb(dxb, execution_options);
                 if let Err(e) = result {
                     eprintln!("\x1b[31m[Execution Error] {e}\x1b[0m");
-                } else {
+                }
+                else if let Some(result) = result.unwrap() {
                     // compile and decompile value container for printing
-                    let compiled_value = compile_template("?", vec![result.unwrap()]).unwrap();
+                    let compiled_value = compile_template("?", vec![result]).unwrap();
                     let decompiled_value = decompile_body(&compiled_value, DecompileOptions {
                         formatted: true,
                         colorized: true,

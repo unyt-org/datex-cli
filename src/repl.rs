@@ -73,6 +73,7 @@ pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
                         formatted: true,
                         colorized: true,
                         resolve_slots: true,
+                        json_compat: false
                     });
                     if let Err(e) = decompiled {
                         println!("\x1b[31m[Decompiler Error] {e}\x1b[0m");
@@ -96,6 +97,7 @@ pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
                         formatted: true,
                         colorized: true,
                         resolve_slots: true,
+                        json_compat: false,
                     }).unwrap();
                     println!("< {decompiled_value}");
                 }

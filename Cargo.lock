@@ -969,6 +969,7 @@ dependencies = [
  "gloo-timers 0.2.6",
  "hex",
  "hyper",
+ "indexmap 2.9.0",
  "itertools 0.10.5",
  "lazy_static",
  "log",

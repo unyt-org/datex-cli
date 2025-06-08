@@ -92,7 +92,7 @@ pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
                 else if let Some(result) = result.unwrap() {
                     // compile and decompile value container for printing
                     let compiled_value = compile_template("?", vec![result]).unwrap();
-                    println!("\x1b[32m[Compilation Result] {:?}", compiled_value);
+                    println!("\x1b[32m[Compilation Result] {}", compiled_value.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(", "));
                     let decompiled_value = decompile_body(&compiled_value, DecompileOptions {
                         formatted: true,
                         colorized: true,

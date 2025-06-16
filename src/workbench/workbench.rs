@@ -6,7 +6,6 @@ use crate::workbench::views::comhub::ComHub;
 use crate::workbench::views::metadata::Metadata;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use datex_core::crypto::random::random_bytes_slice;
-use datex_core::datex_values_old::Pointer;
 use datex_core::runtime::Runtime;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::{
@@ -43,12 +42,12 @@ impl Workbench {
 
             let runtime = self.runtime.borrow();
 
-            // add ptr to the runtime
-            let id = random_bytes_slice::<26>();
-            runtime
-                .memory
-                .borrow_mut()
-                .store_pointer(id, Pointer::from_id(id.to_vec()));
+            // // add ptr to the runtime
+            // let id = random_bytes_slice::<26>();
+            // runtime
+            //     .memory
+            //     .borrow_mut()
+            //     .store_pointer(id, Pointer::from_id(id.to_vec()));
 
             yield_now().await; // let other tasks run
         }

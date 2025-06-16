@@ -22,6 +22,36 @@ impl Highlighter for DatexSyntaxHelper {
     }
 }
 
+// ref x = {}
+// val x = (1,2,3,r);
+// val y: ((string|decimal): number)  = ("sadf":234)
+// const val x = 10;
+// ref x = {};
+// x.a = 10;
+// ref y = (1,2,3); // Map
+// y.x = 10;
+// func (1,2,3)
+
+// ref weather: Weather;
+// weather = getWeatherFromApi(); -> val
+// weather = always cpnvertWearth(getWeatherFromApi()); -> indirect copy
+
+// ref user: User; <-- $user
+// #0 <- $user
+// for name in endpoint (
+//    user = resolveInner/innerRef/collapse/resolve getUserFromApi(name); $a -> $b -> $c;
+// )
+// user // <- $x
+// val x = 10;
+
+// ref x = weather;
+
+// (1: x) == ($(1): x, 1: x)
+// (val string: any)
+// {x: 1} == {0: x, (0min): 20m}
+// x.y  -> (y: 34)
+// x.({a}) -> ({a}: 4)
+
 impl Validator for DatexSyntaxHelper {
     fn validate(&self, ctx: &mut ValidationContext) -> rustyline::Result<ValidationResult> {
         Ok(ValidationResult::Valid(None))
@@ -60,12 +90,13 @@ pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
                     rl.clear_screen()?;
                     continue;
                 }
-                let dxb = compile_script(&line);
+                let dxb = compile_script(&line, None);
                 if let Err(e) = dxb {
                     println!("\x1b[31m[Compiler Error] {e}\x1b[0m");
                     continue;
                 }
                 let dxb = dxb.unwrap();
+                println!("\x1b[32m[Compilation Result] {}", dxb.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(", "));
 
                 // show decompiled code if verbose is enabled
                 if options.verbose {
@@ -85,13 +116,13 @@ pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
 
                 // execute
                 let execution_options = ExecutionOptions {verbose: options.verbose};
-                let result = execute_dxb(dxb, execution_options);
+                let result = execute_dxb(&dxb, execution_options);
                 if let Err(e) = result {
                     eprintln!("\x1b[31m[Execution Error] {e}\x1b[0m");
                 }
                 else if let Some(result) = result.unwrap() {
                     // compile and decompile value container for printing
-                    let compiled_value = compile_template("?", vec![result]).unwrap();
+                    let compiled_value = compile_template("?", &[result], None).unwrap();
                     println!("\x1b[32m[Compilation Result] {}", compiled_value.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(", "));
                     let decompiled_value = decompile_body(&compiled_value, DecompileOptions {
                         formatted: true,

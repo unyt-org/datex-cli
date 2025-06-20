@@ -1,8 +1,8 @@
-use datex_core::compiler::bytecode::{compile_script, compile_template};
+use datex_core::compiler::bytecode::{compile_script, compile_template, CompileOptions, CompileScope};
 use datex_core::datex_values::core_values::endpoint::Endpoint;
 use datex_core::decompiler::{apply_syntax_highlighting, decompile_body, DecompileOptions};
-use datex_core::runtime::execution::{execute_dxb, ExecutionOptions};
-use datex_core::runtime::Runtime;
+use datex_core::runtime::execution::{execute_dxb, ExecutionContext, ExecutionInput, ExecutionOptions};
+use datex_core::runtime::{execution, Runtime};
 use rustyline::completion::Completer;
 use rustyline::config::Configurer;
 use rustyline::error::ReadlineError;
@@ -81,6 +81,13 @@ pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
     rl.enable_bracketed_paste(true);
     rl.set_auto_add_history(true);
 
+    // create context
+    let mut compile_scope = CompileScope::default();
+    let execution_options = ExecutionOptions {
+        verbose: options.verbose,
+        ..ExecutionOptions::default()
+    };
+    let mut execution_context = ExecutionContext::default();
     loop {
         let readline = rl.readline("> ");
         match readline {
@@ -90,16 +97,19 @@ pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
                     rl.clear_screen()?;
                     continue;
                 }
-                let dxb = compile_script(&line, None);
-                if let Err(e) = dxb {
+                // TODO: no clone for compile_scope
+                let compile_result = compile_script(&line, CompileOptions::new_with_scope(compile_scope.clone()));
+                if let Err(e) = compile_result {
                     println!("\x1b[31m[Compiler Error] {e}\x1b[0m");
                     continue;
                 }
-                let dxb = dxb.unwrap();
-                println!("\x1b[32m[Compilation Result] {}", dxb.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(", "));
-
+                let compile_result = compile_result.unwrap();
+                let dxb = compile_result.0;
+                compile_scope = compile_result.1;
                 // show decompiled code if verbose is enabled
                 if options.verbose {
+                    println!("\x1b[32m[Compilation Result] {}", dxb.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(", "));
+
                     let decompiled = decompile_body(&dxb, DecompileOptions {
                         formatted: true,
                         colorized: true,
@@ -115,15 +125,30 @@ pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
                 }
 
                 // execute
-                let execution_options = ExecutionOptions {verbose: options.verbose};
-                let result = execute_dxb(&dxb, execution_options);
+                // update dxb in execution context
+                // set index in execution_context to 0
+                execution_context.reset_index();
+                let execution_input = ExecutionInput {
+                    // FIXME: no clone here
+                    context: execution_context.clone(),
+                    options: execution_options.clone(),
+                    dxb_body: &dxb
+                };
+                let result = execute_dxb(execution_input);
                 if let Err(e) = result {
                     eprintln!("\x1b[31m[Execution Error] {e}\x1b[0m");
+                    continue;
                 }
-                else if let Some(result) = result.unwrap() {
+
+                let result = result.unwrap();
+                execution_context = result.1;
+
+                if let Some(result) = result.0 {
                     // compile and decompile value container for printing
-                    let compiled_value = compile_template("?", &[result], None).unwrap();
-                    println!("\x1b[32m[Compilation Result] {}", compiled_value.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(", "));
+                    let (compiled_value, _) = compile_template("?", &[result], CompileOptions::default()).unwrap();
+                    if options.verbose {
+                        println!("\x1b[32m[Compilation Result] {}", compiled_value.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(", "));
+                    }
                     let decompiled_value = decompile_body(&compiled_value, DecompileOptions {
                         formatted: true,
                         colorized: true,

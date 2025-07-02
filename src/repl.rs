@@ -1,8 +1,9 @@
 use datex_core::compiler::bytecode::{compile_script, compile_template, CompileOptions, CompileScope};
 use datex_core::datex_values::core_values::endpoint::Endpoint;
-use datex_core::decompiler::{apply_syntax_highlighting, decompile_body, DecompileOptions};
-use datex_core::runtime::execution::{execute_dxb, ExecutionContext, ExecutionInput, ExecutionOptions};
+use datex_core::decompiler::{apply_syntax_highlighting, decompile_body, decompile_value, DecompileOptions};
+use datex_core::runtime::execution::{execute_dxb, ExecutionInput, ExecutionOptions, LocalExecutionContext};
 use datex_core::runtime::{execution, Runtime};
+use datex_core::runtime::execution_context::{ExecutionContext, ScriptExecutionError};
 use rustyline::completion::Completer;
 use rustyline::config::Configurer;
 use rustyline::error::ReadlineError;
@@ -82,12 +83,7 @@ pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
     rl.set_auto_add_history(true);
 
     // create context
-    let mut compile_scope = CompileScope::default();
-    let execution_options = ExecutionOptions {
-        verbose: options.verbose,
-        ..ExecutionOptions::default()
-    };
-    let mut execution_context = ExecutionContext::default();
+    let mut execution_context = if options.verbose { ExecutionContext::local_debug() } else { ExecutionContext::local() };
     loop {
         let readline = rl.readline("> ");
         match readline {
@@ -97,67 +93,25 @@ pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
                     rl.clear_screen()?;
                     continue;
                 }
-                // TODO: no clone for compile_scope
-                let compile_result = compile_script(&line, CompileOptions::new_with_scope(compile_scope.clone()));
-                if let Err(e) = compile_result {
-                    println!("\x1b[31m[Compiler Error] {e}\x1b[0m");
-                    continue;
-                }
-                let compile_result = compile_result.unwrap();
-                let dxb = compile_result.0;
-                compile_scope = compile_result.1;
-                // show decompiled code if verbose is enabled
-                if options.verbose {
-                    println!("\x1b[32m[Compilation Result] {}", dxb.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(", "));
 
-                    let decompiled = decompile_body(&dxb, DecompileOptions {
-                        formatted: true,
-                        colorized: true,
-                        resolve_slots: true,
-                        json_compat: false
-                    });
-                    if let Err(e) = decompiled {
-                        println!("\x1b[31m[Decompiler Error] {e}\x1b[0m");
-                        continue;
-                    }
-                    let decompiled = decompiled.unwrap();
-                    println!("[Decompiled]: {}", decompiled);
-                }
+                let result = execution_context.execute_local(&line, &[]);
 
-                // execute
-                // update dxb in execution context
-                // set index in execution_context to 0
-                execution_context.reset_index();
-                let execution_input = ExecutionInput {
-                    // FIXME: no clone here
-                    context: execution_context.clone(),
-                    options: execution_options.clone(),
-                    dxb_body: &dxb
-                };
-                let result = execute_dxb(execution_input);
                 if let Err(e) = result {
-                    eprintln!("\x1b[31m[Execution Error] {e}\x1b[0m");
+                    match e {
+                        ScriptExecutionError::CompilerError(e) => {
+                            println!("\x1b[31m[Compiler Error] {e}\x1b[0m");
+                        }
+                        ScriptExecutionError::ExecutionError(e) => {
+                            println!("\x1b[31m[Execution Error] {e}\x1b[0m");
+                        }
+                    }
                     continue;
                 }
 
-                let result = result.unwrap();
-                execution_context = result.1;
-
-                if let Some(result) = result.0 {
-                    // compile and decompile value container for printing
-                    let (compiled_value, _) = compile_template("?", &[result], CompileOptions::default()).unwrap();
-                    if options.verbose {
-                        println!("\x1b[32m[Compilation Result] {}", compiled_value.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(", "));
-                    }
-                    let decompiled_value = decompile_body(&compiled_value, DecompileOptions {
-                        formatted: true,
-                        colorized: true,
-                        resolve_slots: true,
-                        json_compat: false,
-                    }).unwrap();
+                if let Some(result) = result.unwrap() {
+                    let decompiled_value = decompile_value(&result, DecompileOptions::colorized());
                     println!("< {decompiled_value}");
                 }
-
             }
             Err(_) => break,
         }

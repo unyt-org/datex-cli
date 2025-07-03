@@ -4,7 +4,7 @@ use datex_core::runtime::Runtime;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use datex_core::datex_values::core_values::endpoint::Endpoint;
+use datex_core::values::core_values::endpoint::Endpoint;
 use datex_core::network::com_hub::InterfacePriority;
 use datex_core::network::com_interfaces::default_com_interfaces::websocket::websocket_server_native_interface::WebSocketServerNativeInterface;
 use datex_core::utils::time_native::TimeNative;

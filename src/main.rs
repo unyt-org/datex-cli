@@ -49,7 +49,7 @@ async fn main() {
             }
             Subcommands::Repl(Repl{verbose}) => {
                 let options = ReplOptions {verbose};
-                repl(options).unwrap();
+                repl(options).await.unwrap();
             }
             Subcommands::Workbench(_) => {
                 let local = LocalSet::new();
@@ -59,7 +59,7 @@ async fn main() {
     }
     // run REPL if no command is provided
     else {
-        repl(ReplOptions::default()).unwrap();
+        repl(ReplOptions::default()).await.unwrap();
     }
 }
 

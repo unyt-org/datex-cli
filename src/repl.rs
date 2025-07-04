@@ -72,7 +72,7 @@ pub struct ReplOptions {
     pub verbose: bool,
 }
 
-pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
+pub async fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
     let runtime = Runtime::new(Endpoint::default());
 
     let mut rl = rustyline::Editor::<DatexSyntaxHelper, _>::new()?;
@@ -92,7 +92,7 @@ pub fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
                     continue;
                 }
 
-                let result = execution_context.execute_local(&line, &[]);
+                let result = runtime.execute(&line, &[], &mut execution_context).await;
 
                 if let Err(e) = result {
                     match e {

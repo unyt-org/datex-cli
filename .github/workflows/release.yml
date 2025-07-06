@@ -88,9 +88,9 @@ jobs:
           pkg-config --print-variables libudev || echo "libudev.pc not found"
 
       - name: Set up Rust (nightly)
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly-2025-07-03
+          toolchain: nightly-2025-07-04
 
       - name: Install Rust target
         run: rustup target add ${{ matrix.target }}

@@ -45,11 +45,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install cross-compilation toolchains
-        if: runner.run_on == 'ubuntu-latest'
-        run: |
-          sudo apt update
-          sudo apt install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf mingw-w64
+      - name: Update apt repository
+        run: sudo apt update
+
+      - name: Install libudev development package
+        if: matrix.run_on == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libudev-dev
+
+      - name: Install cross-compilation tools for Windows
+        if: matrix.target == 'x86_64-pc-windows-gnu'
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64
+
+      - name: Install cross-compilation tools for aarch64 Linux
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Install cross-compilation tools for armv7 Linux
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf'
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-linux-gnueabihf
 
       - name: Set up Rust (nightly)
         uses: dtolnay/rust-toolchain@stable

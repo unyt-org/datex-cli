@@ -7,8 +7,8 @@ on:
 
 jobs:
   build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Build on ${{ matrix.target }}
+    runs-on: ubuntu-latest  # Use Ubuntu for all builds
     strategy:
       matrix:
         include:

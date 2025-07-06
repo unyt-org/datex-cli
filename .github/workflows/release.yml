@@ -18,14 +18,14 @@ jobs:
             os_name: linux-x86_64
             run_on: ubuntu-latest
             ext: ''
-          - target: aarch64-unknown-linux-gnu
-            os_name: linux-aarch64
-            run_on: ubuntu-latest
-            ext: ''
-          - target: armv7-unknown-linux-gnueabihf
-            os_name: linux-armv7
-            run_on: ubuntu-latest
-            ext: ''
+#          - target: aarch64-unknown-linux-gnu
+#            os_name: linux-aarch64
+#            run_on: ubuntu-latest
+#            ext: ''
+#          - target: armv7-unknown-linux-gnueabihf
+#            os_name: linux-armv7
+#            run_on: ubuntu-latest
+#            ext: ''
 
           # macOS (x86 and Apple Silicon)
           - target: x86_64-apple-darwin

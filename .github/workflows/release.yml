@@ -45,9 +45,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Update apt repository
-        run: sudo apt update
-
       - name: Install libudev development package
         if: matrix.run_on == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install -y libudev-dev

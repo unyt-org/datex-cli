@@ -45,11 +45,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install dependencies (Linux only)
-        if: runner.os == 'Linux'
+      - name: Install cross-compilation toolchains
         run: |
           sudo apt update
-          sudo apt install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf
+          sudo apt install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf mingw-w64
 
       - name: Set up Rust (nightly)
         uses: dtolnay/rust-toolchain@stable

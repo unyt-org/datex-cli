@@ -90,7 +90,7 @@ jobs:
       - name: Set up Rust (nightly)
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2025-07-04
+          toolchain: nightly-2025-07-03
 
       - name: Install Rust target
         run: rustup target add ${{ matrix.target }}

@@ -2,8 +2,8 @@ name: Build and Release Rust Binary
 
 on:
   push:
-    branches:
-      - main
+#    branches:
+#      - main
 
 jobs:
   build:

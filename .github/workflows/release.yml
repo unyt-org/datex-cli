@@ -120,6 +120,7 @@ jobs:
         with:
           name: ${{ matrix.os_name }}
           path: dist/${{ matrix.os_name }}.zip
+    continue-on-error: true
   release:
     name: Create GitHub Draft Release
     needs: build

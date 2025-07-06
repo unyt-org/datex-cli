@@ -13,6 +13,7 @@ pub enum Subcommands {
     Run(Run),
     Lsp(Lsp),
     Repl(Repl),
+    Workbench(Workbench),
 }
 
 #[derive(Args)]
@@ -24,7 +25,14 @@ pub struct Run {
 pub struct Lsp {}
 
 #[derive(Args)]
-pub struct Repl {}
+pub struct Repl {
+    /// Verbose mode for debugging
+    #[arg(short, long)]
+    pub verbose: bool,
+}
+
+#[derive(Args)]
+pub struct Workbench {}
 
 pub fn get_command() -> Option<Subcommands> {
     Cli::parse().command

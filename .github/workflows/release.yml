@@ -112,10 +112,6 @@ jobs:
           restore-keys: |
             ${{ matrix.os_name }}-cargo-build-
 
-      - name: Verify cache contents
-        run: |
-          ls -l target/${{ matrix.target }}/release/deps || echo "No cached build artifacts found"
-
       - name: Build binary
         run: |
           cargo build --release --target=${{ matrix.target }}

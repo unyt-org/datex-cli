@@ -51,6 +51,11 @@ jobs:
           sudo apt update
           sudo apt install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf
 
+      - name: Set up Rust (nightly)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+
       - name: Install Rust target
         run: rustup target add ${{ matrix.target }}
 

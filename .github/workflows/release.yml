@@ -67,9 +67,6 @@ jobs:
 
           # Check pkg-config finds libudev.pc for the target
           pkg-config --print-variables libudev || echo "libudev.pc not found"
-
-          # Build the project
-          cargo build --release --target aarch64-unknown-linux-gnu
         env:
           PKG_CONFIG_SYSROOT_DIR: /usr/aarch64-linux-gnu
           PKG_CONFIG_PATH: /usr/aarch64-linux-gnu/usr/lib/pkgconfig:/usr/aarch64-linux-gnu/usr/share/pkgconfig
@@ -89,9 +86,6 @@ jobs:
         run: |
           # Verify pkg-config can find target libraries
           pkg-config --print-variables libudev || echo "libudev.pc not found"
-
-          # Build for armv7 target
-          cargo build --release --target armv7-unknown-linux-gnueabihf
 
       - name: Set up Rust (nightly)
         uses: dtolnay/rust-toolchain@stable

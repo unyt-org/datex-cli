@@ -1009,6 +1009,7 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 [[package]]
 name = "datex-core"
 version = "0.0.4"
+source = "git+https://github.com/unyt-org/datex-core.git?branch=feat%2Fref#549a2ae07c55f2d0abd8ea748197b31560f15dc8"
 dependencies = [
  "ariadne",
  "async-trait",
@@ -1085,6 +1086,7 @@ dependencies = [
 [[package]]
 name = "datex_macros"
 version = "0.1.0"
+source = "git+https://github.com/unyt-org/datex-core.git?branch=feat%2Fref#549a2ae07c55f2d0abd8ea748197b31560f15dc8"
 dependencies = [
  "proc-macro2",
  "quote",

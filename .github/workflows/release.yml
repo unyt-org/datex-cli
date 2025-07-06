@@ -1,0 +1,89 @@
+name: Build and Release Rust Binary
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # Linux
+          - target: x86_64-unknown-linux-gnu
+            os_name: linux-x86_64
+            ext: ''
+          - target: aarch64-unknown-linux-gnu
+            os_name: linux-aarch64
+            ext: ''
+          - target: armv7-unknown-linux-gnueabihf
+            os_name: linux-armv7
+            ext: ''
+
+          # macOS (x86 and Apple Silicon)
+          - target: x86_64-apple-darwin
+            os_name: macos-x86_64
+            ext: ''
+          - target: aarch64-apple-darwin
+            os_name: macos-aarch64
+            ext: ''
+
+          # Windows (x86_64 only)
+          - target: x86_64-pc-windows-gnu
+            os_name: windows-x86_64
+            ext: '.exe'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf
+
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Build binary
+        run: |
+          cargo build --release --target=${{ matrix.target }}
+
+      - name: Package binary
+        run: |
+          mkdir -p dist
+          BIN_NAME=datex_cli
+          TARGET_DIR=target/${{ matrix.target }}/release
+          OUTPUT_NAME=${BIN_NAME}-${{ matrix.os_name }}${{ matrix.ext }}
+          cp ${TARGET_DIR}/${BIN_NAME}${{ matrix.ext }} dist/${OUTPUT_NAME}
+          cd dist && zip ${OUTPUT_NAME}.zip ${OUTPUT_NAME} && rm ${OUTPUT_NAME}
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os_name }}
+          path: dist/${{ matrix.os_name }}.zip
+
+  release:
+    name: Create GitHub Draft Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Create Draft Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          tag_name: ${{ github.ref_name }}
+          files: dist/**/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,4 +1,0 @@
-[submodule "datex-core"]
-	path = datex-core
-	url = git@github.com:unyt-org/datex-core.git
-	branch = feat/communication-interfaces

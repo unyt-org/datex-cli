@@ -1,14 +1,14 @@
 [package]
 name = "datex_cli"
-version = "0.1.0"
-edition = "2021"
+version = "0.0.1"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 clap = { version = "4.0.23", features = ["derive"] }
 lazy_static = "1.4.0"
-datex-core = { path = "../datex-core-js/rs-lib/datex-core", features = ["default", "debug"] }
+datex-core = { git = "https://github.com/unyt-org/datex-core.git", branch = "feat/ref", features = ["default", "debug"] }
 
 serde_json = "1.0.78"
 tokio = { version = "1.17.0", features = ["full"] }

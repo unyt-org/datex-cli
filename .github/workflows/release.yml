@@ -120,7 +120,6 @@ jobs:
       - name: Package binary
         run: |
           mkdir -p dist
-          BIN_NAME=datex_cli
           TARGET_DIR=target/${{ matrix.target }}/release
           OUTPUT_NAME=datex-${{ matrix.target }}${{ matrix.ext }}
           cp ${TARGET_DIR}/${BIN_NAME}${{ matrix.ext }} dist/datex

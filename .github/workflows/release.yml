@@ -64,7 +64,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os_name }}
+          name: ${{ matrix.target }}
           path: dist/datex-${{ matrix.target }}.zip
 
   release:

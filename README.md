@@ -1,4 +1,23 @@
 # DATEX CLI
+> This is the DATEX Command Line Interface (CLI) for interacting with the DATEX runtime.
+> It offers a REPL (Read-Eval-Print Loop) for executing DATEX code interactively and a command to run DATEX files.
+
+## Installation
+
+You can install the DATEX CLI using the provided installation script. This script will download and install the latest version of the DATEX CLI.
+```bash
+curl -fsSL https://raw.githubusercontent.com/unyt-org/datex-cli/refs/heads/main/install.sh | sh
+```
+
+To select a specific version for the installation, you can pass the tag as an argument:
+```bash
+curl -fsSL https://raw.githubusercontent.com/unyt-org/datex-cli/refs/heads/main/install.sh | sh -s -- v0.1.0
+```
+
+Alternatively, you can build the DATEX CLI from source using Cargo, the Rust package manager. Make sure you have Rust and Cargo installed, then run:
+```bash
+cargo build --release
+```
 
 ## Usage
 
@@ -6,6 +25,7 @@
 ```shell
 datex
 ```
+
 Alternatively, you can also use the `repl` subcommand:
 ```shell
 datex repl

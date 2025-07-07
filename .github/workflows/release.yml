@@ -55,18 +55,17 @@ jobs:
       - name: Package binary
         run: |
           mkdir -p dist
-          BIN_NAME=datex_cli
           TARGET_DIR=target/${{ matrix.target }}/release
-          OUTPUT_NAME=${BIN_NAME}-${{ matrix.os_name }}${{ matrix.ext }}
-          cp ${TARGET_DIR}/${BIN_NAME}${{ matrix.ext }} dist/${OUTPUT_NAME}
-          cd dist && zip ${OUTPUT_NAME}.zip ${OUTPUT_NAME} && rm ${OUTPUT_NAME}
+          EXECUTABLE_NAME=datex${{ matrix.ext }}
+          cp ${TARGET_DIR}/datex-cli${{ matrix.ext }} dist/${EXECUTABLE_NAME}
+          cd dist && zip datex-${{ matrix.target }}.zip ${EXECUTABLE_NAME} && rm ${EXECUTABLE_NAME}
         shell: bash
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os_name }}
-          path: dist/${{ matrix.os_name }}.zip
+          name: ${{ matrix.target }}
+          path: dist/datex-${{ matrix.target }}.zip
 
   release:
     name: Create GitHub Draft Release

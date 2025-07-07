@@ -121,6 +121,7 @@ jobs:
         run: |
           mkdir -p dist
           TARGET_DIR=target/${{ matrix.target }}/release
+          ls -l ${TARGET_DIR}
           OUTPUT_NAME=datex-${{ matrix.target }}${{ matrix.ext }}
           cp ${TARGET_DIR}/datex_cli${{ matrix.ext }} dist/datex${{ matrix.ext }}
           cd dist && zip ${OUTPUT_NAME}.zip datex${{ matrix.ext }}

@@ -3,7 +3,16 @@
 > It offers a REPL (Read-Eval-Print Loop) for executing DATEX code interactively and a command to run DATEX files.
 
 ## Installation
+The DATEX CLI can be installed on various platforms. Below are the installation methods for different operating systems.
 
+### Brew
+
+You can install the DATEX CLI using Homebrew:
+```bash
+brew install unyt-org/datex-cli/datex
+```
+
+### Install Script
 You can install the DATEX CLI using the provided installation script. This script will download and install the latest version of the DATEX CLI.
 ```bash
 curl -fsSL https://raw.githubusercontent.com/unyt-org/datex-cli/refs/heads/main/install.sh | sh
@@ -13,7 +22,7 @@ To select a specific version for the installation, you can pass the tag as an ar
 ```bash
 curl -fsSL https://raw.githubusercontent.com/unyt-org/datex-cli/refs/heads/main/install.sh | sh -s -- v0.1.0
 ```
-
+### From source
 Alternatively, you can build the DATEX CLI from source using Cargo, the Rust package manager. Make sure you have Rust and Cargo installed, then run:
 ```bash
 cargo build --release
@@ -57,3 +66,6 @@ cargo run workbench
 cargo build --release
 ./target/release/datex_cli
 ```
+---
+
+<sub>&copy; unyt 2025 • [unyt.org](https://unyt.org)</sub>

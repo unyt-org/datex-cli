@@ -124,7 +124,7 @@ jobs:
           TARGET_DIR=target/${{ matrix.target }}/release
           OUTPUT_NAME=datex-${{ matrix.target }}${{ matrix.ext }}
           cp ${TARGET_DIR}/${BIN_NAME}${{ matrix.ext }} dist/datex
-          cd dist && zip ${OUTPUT_NAME}.zip datex && rm ${OUTPUT_NAME}
+          cd dist && zip ${OUTPUT_NAME}.zip datex
         shell: bash
 
       - name: Upload artifact

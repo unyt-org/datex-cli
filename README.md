@@ -66,6 +66,7 @@ cargo run workbench
 cargo build --release
 ./target/release/datex_cli
 ```
+
 ---
 
 <sub>&copy; unyt 2025 • [unyt.org](https://unyt.org)</sub>

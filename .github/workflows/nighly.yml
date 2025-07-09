@@ -28,6 +28,9 @@ jobs:
         run: |
           set -eo pipefail
           .github/tools/nightly.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
 
   build:
     needs: get-ref

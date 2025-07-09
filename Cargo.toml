@@ -21,3 +21,6 @@ serde = { version = "1.0", features = ["derive"] }
 rustyline = "15.0.0"
 ratatui = "0.29.0"
 crossterm = "0.28.1"
+
+[patch."https://github.com/unyt-org/datex-core.git"]
+datex-core = { path = "../datex-core-js/rs-lib/datex-core", features = ["default", "debug"] }

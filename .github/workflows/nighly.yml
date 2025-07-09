@@ -52,24 +52,24 @@ jobs:
       matrix:
         include:
           # Linux
-          - target: x86_64-unknown-linux-gnu
-            os_name: linux-x86_64
-            run_on: ubuntu-latest
-            ext: ''
+        #   - target: x86_64-unknown-linux-gnu
+        #     os_name: linux-x86_64
+        #     run_on: ubuntu-latest
+        #     ext: ''
           # macOS
-          - target: x86_64-apple-darwin
-            os_name: macos-x86_64
-            run_on: macos-latest
-            ext: ''
+        #   - target: x86_64-apple-darwin
+        #     os_name: macos-x86_64
+        #     run_on: macos-latest
+        #     ext: ''
           - target: aarch64-apple-darwin
             os_name: macos-aarch64
             run_on: macos-latest
             ext: ''
           # Windows
-          - target: x86_64-pc-windows-gnu
-            os_name: windows-x86_64
-            run_on: ubuntu-latest
-            ext: '.exe'
+        #   - target: x86_64-pc-windows-gnu
+        #     os_name: windows-x86_64
+        #     run_on: ubuntu-latest
+        #     ext: '.exe'
     runs-on: ${{ matrix.run_on }}
     name: Build on ${{ matrix.target }}
     steps:
@@ -115,7 +115,24 @@ jobs:
       - name: Build binary
         run: |
           cargo build --release --target=${{ matrix.target }}
+      
+      - name: Import signing certificate
+        if: contains(matrix.target, 'apple-darwin')
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+            p12-file-base64: ${{ secrets.APPLE_CODESIGN_KEY }}
+            p12-password:    ${{ secrets.APPLE_CODESIGN_PASSWORD }}
 
+      - name: Apple Code Signing
+        if: contains(matrix.target, 'apple-darwin')
+        env:
+            CODESIGN_ALLOCATE: /usr/bin/codesign_allocate
+        run: |
+            BIN=target/${{ matrix.target }}/release/datex_cli
+            codesign --force --options runtime --timestamp \
+                    --sign "$APPLE_CODESIGNING_IDENTITY" "$BIN"
+            codesign --verify --verbose=2 "$BIN"
+      
       - name: Package binary
         run: |
           mkdir -p dist

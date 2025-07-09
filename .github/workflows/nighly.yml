@@ -1,4 +1,4 @@
-name: Nightly Build & Draft Release
+name: Nightly Build
 
 on:
   schedule:

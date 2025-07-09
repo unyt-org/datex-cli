@@ -83,11 +83,78 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install libudev development package
+        if: matrix.run_on == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libudev-dev
+
+      - name: Install cross-compilation tools for Windows
+        if: matrix.target == 'x86_64-pc-windows-gnu'
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64
+
+      - name: Install cross-compilation tools for aarch64 Linux
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross pkg-config
+
+      # Set environment variables for pkg-config cross compilation
+      - name: Set environment variables
+        if : matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          export PKG_CONFIG_SYSROOT_DIR=/usr/aarch64-linux-gnu
+          export PKG_CONFIG_PATH=$PKG_CONFIG_SYSROOT_DIR/usr/lib/pkgconfig:$PKG_CONFIG_SYSROOT_DIR/usr/share/pkgconfig
+          export PKG_CONFIG=pkg-config
+
+          # Check pkg-config finds libudev.pc for the target
+          pkg-config --print-variables libudev || echo "libudev.pc not found"
+        env:
+          PKG_CONFIG_SYSROOT_DIR: /usr/aarch64-linux-gnu
+          PKG_CONFIG_PATH: /usr/aarch64-linux-gnu/usr/lib/pkgconfig:/usr/aarch64-linux-gnu/usr/share/pkgconfig
+          PKG_CONFIG: pkg-config
+
+      - name: Install cross-compilation tools for armv7 Linux
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf'
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-linux-gnueabihf libc6-dev-armhf-cross pkg-config
+
+      # Set environment variables for pkg-config cross compilation
+      - name: Set environment variables and build
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf'
+        env:
+          PKG_CONFIG_SYSROOT_DIR: /usr/arm-linux-gnueabihf
+          PKG_CONFIG_PATH: /usr/arm-linux-gnueabihf/usr/lib/pkgconfig:/usr/arm-linux-gnueabihf/usr/share/pkgconfig
+          PKG_CONFIG: pkg-config
+        run: |
+          # Verify pkg-config can find target libraries
+          pkg-config --print-variables libudev || echo "libudev.pc not found"
+
+      - name: Set up Rust (nightly)
+        uses: dtolnay/rust-toolchain@stable
         with:
-          ref: ${{ needs.select-ref.outputs.ref }}
+          toolchain: nightly-2025-07-04
+
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ matrix.os_name }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+              ${{ matrix.os_name }}-cargo-registry-
+
+      - name: Cache Cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ matrix.os_name }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.os_name }}-cargo-build-
 
       - name: Build binary
-        run: cargo build --release --target=${{ matrix.target }}
+        run: |
+          cargo build --release --target=${{ matrix.target }}
 
       - name: Package binary
         run: |

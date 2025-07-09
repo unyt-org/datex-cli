@@ -188,11 +188,13 @@ jobs:
           TAG="nightly"
           TITLE="Nightly build ($(date -u +'%Y-%m-%d'))"
           TARGET="${{ needs.get-ref.outputs.ref }}"
+          TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Updating existing nightly release - clobbering assets"
             gh release upload  "$TAG" dist/**/*.zip --clobber
             gh release edit     "$TAG" --title "$TITLE" --prerelease \
+                                --body "Nightly build for $TARGET at $TIME" \
                                 --target "$TARGET"
           else
             echo "Creating new nightly release"

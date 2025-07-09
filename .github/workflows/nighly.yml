@@ -11,6 +11,7 @@ on:
 
 jobs:
   get-ref:
+    name: Get nightly ref
     runs-on: ubuntu-latest
     outputs:
       ref: ${{ steps.choose.outputs.ref }}
@@ -56,19 +57,19 @@ jobs:
             run_on: ubuntu-latest
             ext: ''
           # macOS
-        #   - target: x86_64-apple-darwin
-        #     os_name: macos-x86_64
-        #     run_on: macos-latest
-        #     ext: ''
-        #   - target: aarch64-apple-darwin
-        #     os_name: macos-aarch64
-        #     run_on: macos-latest
-        #     ext: ''
-        #   # Windows
-        #   - target: x86_64-pc-windows-gnu
-        #     os_name: windows-x86_64
-        #     run_on: ubuntu-latest
-        #     ext: '.exe'
+          - target: x86_64-apple-darwin
+            os_name: macos-x86_64
+            run_on: macos-latest
+            ext: ''
+          - target: aarch64-apple-darwin
+            os_name: macos-aarch64
+            run_on: macos-latest
+            ext: ''
+          # Windows
+          - target: x86_64-pc-windows-gnu
+            os_name: windows-x86_64
+            run_on: ubuntu-latest
+            ext: '.exe'
     runs-on: ${{ matrix.run_on }}
     name: Build on ${{ matrix.target }}
     steps:
@@ -194,7 +195,7 @@ jobs:
             echo "Updating existing nightly release - clobbering assets"
             gh release upload  "$TAG" dist/**/*.zip --clobber
             gh release edit     "$TAG" --title "$TITLE" --prerelease \
-                                --body "Nightly build for $TARGET at $TIME" \
+                                --notes "Nightly build for $TARGET at $TIME" \
                                 --target "$TARGET"
           else
             echo "Creating new nightly release"

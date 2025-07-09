@@ -39,8 +39,8 @@ jobs:
           set -eo pipefail
           echo "Checking if the pull request ref matches the expected ref..."
           echo "Expected ref: ${{ steps.choose.outputs.ref }}"
-          echo "Pull request ref: ${{ github.head_ref }}"
-          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.head_ref }}" != "${{ steps.choose.outputs.ref }}" ]]; then
+          echo "Pull request ref: ${{ github.sha }}"
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.sha }}" != "${{ steps.choose.outputs.ref }}" ]]; then
             echo "Pull request ref does not match the expected ref. Aborting."
             exit 1
           fi 

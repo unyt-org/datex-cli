@@ -35,7 +35,14 @@ jobs:
           TODAY=$(date -u +'%Y%m%d')
 
           if [[ "${{ github.event_name }}" == 'pull_request' ]]; then
-            echo "ref=${{ github.event.pull_request.head.sha }}" >>"$GITHUB_OUTPUT"
+            PR_JSON=$(gh pr list --label nightly --state open --json headRefName -q '.[0]')
+            if [[ "$PR_JSON" == "" ]]; then
+              echo "::warning ::No open PR with label 'nightly' found, using main branch instead."
+              echo "ref=main"      >>"$GITHUB_OUTPUT"
+            else
+              echo "Found open PR with label 'nightly': $PR_JSON"
+              echo "ref=${PR_JSON}" >>"$GITHUB_OUTPUT"
+            fi
             echo "tag_suffix=$TODAY" >>"$GITHUB_OUTPUT"
 
           elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.pr_number }}" != "" ]]; then
@@ -44,14 +51,8 @@ jobs:
             echo "tag_suffix=$TODAY" >>"$GITHUB_OUTPUT"
 
           else
-            PR_JSON=$(gh pr list --label nightly --state open --json headRefName -q '.[0]')
-            if [[ "$PR_JSON" == "" ]]; then
-              echo "::warning ::No open PR with label 'nightly' found, using main branch instead."
-              echo "ref=main"      >>"$GITHUB_OUTPUT"
-            else
-              echo "ref=${PR_JSON}" >>"$GITHUB_OUTPUT"
-            fi
-            echo "tag_suffix=$TODAY" >>"$GITHUB_OUTPUT"
+            echo "No nightly PR found. Aborting workflow."
+            exit 1
           fi
 
   build:

@@ -15,6 +15,10 @@ jobs:
       tag_suffix: ${{ steps.choose.outputs.tag_suffix }}
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Install Deno
         uses: denoland/setup-deno@v2
         with:

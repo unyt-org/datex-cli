@@ -120,14 +120,21 @@ jobs:
         if: contains(matrix.target, 'apple-darwin')
         run: |
           echo "${{ secrets.APPLE_CODESIGN_KEY }}" | base64 --decode > cert.p12
+          mkdir -p private_keys/
+          echo '${{ secrets.APPLE_APP_STORE_CONNECT_KEY }}' | base64 --decode > private_keys/AuthKey_32BCL596RC.p12
+
 
       - name: Apple Code Signing
         if: contains(matrix.target, 'apple-darwin')
         uses: indygreg/apple-code-sign-action@v1
         with:
           input_path: target/${{ matrix.target }}/release/datex_cli
+          notarize: true
+          staple: true
           p12_file: cert.p12
           p12_password: ${{ secrets.APPLE_CODESIGN_PASSWORD }}
+          app_store_connect_api_issuer: '69a6de92-35f2-47e3-e053-5b8c7c11a4d1'
+          app_store_connect_api_key: '32BCL596RC'
       
       - name: Package binary
         run: |

@@ -118,20 +118,16 @@ jobs:
       
       - name: Import signing certificate
         if: contains(matrix.target, 'apple-darwin')
-        uses: apple-actions/import-codesign-certs@v2
-        with:
-            p12-file-base64: ${{ secrets.APPLE_CODESIGN_KEY }}
-            p12-password:    ${{ secrets.APPLE_CODESIGN_PASSWORD }}
+        run: |
+          echo "${{ secrets.APPLE_CODESIGN_KEY }}" | base64 --decode > cert.p12
 
       - name: Apple Code Signing
         if: contains(matrix.target, 'apple-darwin')
-        env:
-            CODESIGN_ALLOCATE: /usr/bin/codesign_allocate
-        run: |
-            BIN=target/${{ matrix.target }}/release/datex_cli
-            codesign --force --options runtime --timestamp \
-                    --sign "$APPLE_CODESIGNING_IDENTITY" "$BIN"
-            codesign --verify --verbose=2 "$BIN"
+        uses: indygreg/apple-code-sign-action@v1
+        with:
+          input_path: target/${{ matrix.target }}/release/datex_cli
+          p12_file: cert.p12
+          p12_password: ${{ secrets.APPLE_CODESIGN_PASSWORD }}
       
       - name: Package binary
         run: |

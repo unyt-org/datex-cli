@@ -1,3 +1,4 @@
+name: Publish Crate
 on:
     release:
         types: [published]

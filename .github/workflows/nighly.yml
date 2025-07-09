@@ -1,13 +1,6 @@
 name: Nightly Build & Draft Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: 'The PR number to build (optional)'
-        type: number
-        required: false
-
   schedule:
     - cron: '0 0 * * *'
 
@@ -15,48 +8,25 @@ on:
     types: [labeled, synchronize]
 
 jobs:
-  select-ref:
+  get-ref:
     runs-on: ubuntu-latest
     outputs:
       ref: ${{ steps.choose.outputs.ref }}
       tag_suffix: ${{ steps.choose.outputs.tag_suffix }}
 
     steps:
-      - name: Install GitHub CLI
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y gh
-
-      - id: choose
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Get latest commit hash
+        id: choose
         run: |
           set -eo pipefail
-          TODAY=$(date -u +'%Y%m%d')
-
-          if [[ "${{ github.event_name }}" == 'pull_request' ]]; then
-            PR_JSON=$(gh pr list --label nightly --state open --json headRefName -q '.[0]')
-            if [[ "$PR_JSON" == "" ]]; then
-              echo "::warning ::No open PR with label 'nightly' found, using main branch instead."
-              echo "ref=main"      >>"$GITHUB_OUTPUT"
-            else
-              echo "Found open PR with label 'nightly': $PR_JSON"
-              echo "ref=${PR_JSON}" >>"$GITHUB_OUTPUT"
-            fi
-            echo "tag_suffix=$TODAY" >>"$GITHUB_OUTPUT"
-
-          elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.pr_number }}" != "" ]]; then
-            REF=$(gh pr view "${{ inputs.pr_number }}" --json headRefName -q '.headRefName')
-            echo "ref=$REF"        >>"$GITHUB_OUTPUT"
-            echo "tag_suffix=$TODAY" >>"$GITHUB_OUTPUT"
-
-          else
-            echo "No nightly PR found. Aborting workflow."
-            exit 1
-          fi
+          .github/tools/nightly.ts
 
   build:
-    needs: select-ref
+    needs: get-ref
     strategy:
       matrix:
         include:
@@ -85,7 +55,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-            ref: ${{ needs.select-ref.outputs.ref }}
+            ref: ${{ needs.get-ref.outputs.ref }}
 
       - name: Install libudev development package
         if: matrix.run_on == 'ubuntu-latest'
@@ -176,14 +146,14 @@ jobs:
     continue-on-error: true
 
   release:
-    needs: [build, select-ref]
+    needs: [build, get-ref]
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-            ref: ${{ needs.select-ref.outputs.ref }}
+            ref: ${{ needs.get-ref.outputs.ref }}
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -197,9 +167,8 @@ jobs:
           set -eo pipefail
           TAG="nightly"
           TITLE="Nightly build ($(date -u +'%Y-%m-%d'))"
-          TARGET="${{ needs.select-ref.outputs.ref }}"
+          TARGET="${{ needs.get-ref.outputs.ref }}"
 
-          # existiert bereits ein Release mit diesem Tag?
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Updating existing nightly release - clobbering assets"
             gh release upload  "$TAG" dist/**/*.zip --clobber

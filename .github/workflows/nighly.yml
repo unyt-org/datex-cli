@@ -7,7 +7,7 @@ on:
     - cron: '0 0 * * *'
 
   pull_request:
-    types: [labeled, synchronize]
+    types: [labeled] # , synchronize
 
 jobs:
   get-ref:
@@ -30,9 +30,14 @@ jobs:
         run: |
           set -eo pipefail
           .github/tools/nightly.ts
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.head_ref }}" != "${{ steps.choose.outputs.ref }}" ]]; then
+            echo "Pull request ref does not match the expected ref. Aborting."
+            exit 1
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+       
 
   build:
     needs: get-ref

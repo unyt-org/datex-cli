@@ -1,0 +1,138 @@
+name: Nightly Build & Draft Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'The PR number to build (optional)'
+        type: number
+        required: false
+
+  schedule:
+    - cron: '0 0 * * *'
+
+  pull_request:
+    types: [labeled, synchronize]
+
+jobs:
+  select-ref:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.choose.outputs.ref }}
+      tag_suffix: ${{ steps.choose.outputs.tag_suffix }}
+
+    steps:
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y gh
+
+      - id: choose
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eo pipefail
+          TODAY=$(date -u +'%Y%m%d')
+
+          if [[ "${{ github.event_name }}" == 'pull_request' ]]; then
+            echo "ref=${{ github.event.pull_request.head.sha }}" >>"$GITHUB_OUTPUT"
+            echo "tag_suffix=$TODAY" >>"$GITHUB_OUTPUT"
+
+          elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.pr_number }}" != "" ]]; then
+            REF=$(gh pr view "${{ inputs.pr_number }}" --json headRefName -q '.headRefName')
+            echo "ref=$REF"        >>"$GITHUB_OUTPUT"
+            echo "tag_suffix=$TODAY" >>"$GITHUB_OUTPUT"
+
+          else
+            PR_JSON=$(gh pr list --label nightly --state open --json headRefName -q '.[0]')
+            if [[ "$PR_JSON" == "" ]]; then
+              echo "::warning ::No open PR with label 'nightly' found, using main branch instead."
+              echo "ref=main"      >>"$GITHUB_OUTPUT"
+            else
+              echo "ref=${PR_JSON}" >>"$GITHUB_OUTPUT"
+            fi
+            echo "tag_suffix=$TODAY" >>"$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: select-ref
+    strategy:
+      matrix:
+        include:
+          # Linux
+          - target: x86_64-unknown-linux-gnu
+            os_name: linux-x86_64
+            run_on: ubuntu-latest
+            ext: ''
+          # macOS
+          - target: x86_64-apple-darwin
+            os_name: macos-x86_64
+            run_on: macos-latest
+            ext: ''
+          - target: aarch64-apple-darwin
+            os_name: macos-aarch64
+            run_on: macos-latest
+            ext: ''
+          # Windows
+          - target: x86_64-pc-windows-gnu
+            os_name: windows-x86_64
+            run_on: ubuntu-latest
+            ext: '.exe'
+    runs-on: ${{ matrix.run_on }}
+    name: Build on ${{ matrix.target }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.select-ref.outputs.ref }}
+
+      - name: Build binary
+        run: cargo build --release --target=${{ matrix.target }}
+
+      - name: Package binary
+        run: |
+          mkdir -p dist
+          TARGET_DIR=target/${{ matrix.target }}/release
+          OUTPUT_NAME=datex-${{ matrix.target }}
+          cp ${TARGET_DIR}/datex_cli${{ matrix.ext }} dist/datex${{ matrix.ext }}
+          cd dist && zip ${OUTPUT_NAME}.zip datex${{ matrix.ext }}
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os_name }}
+          path: dist/datex-${{ matrix.target }}.zip
+    continue-on-error: true
+
+  release:
+    needs: [build, select-ref]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Publish/Update nightly release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eo pipefail
+          TAG="nightly"
+          TITLE="Nightly build ($(date -u +'%Y-%m-%d'))"
+          TARGET="${{ needs.select-ref.outputs.ref }}"
+
+          # existiert bereits ein Release mit diesem Tag?
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Updating existing nightly release - clobbering assets"
+            gh release upload  "$TAG" dist/**/*.zip --clobber
+            gh release edit     "$TAG" --title "$TITLE" --prerelease \
+                                --target "$TARGET"
+          else
+            echo "Creating new nightly release"
+            gh release create   "$TAG" dist/**/*.zip \
+                                --title "$TITLE" --prerelease \
+                                --target "$TARGET"
+          fi

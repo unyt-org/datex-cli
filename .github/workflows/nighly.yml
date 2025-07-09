@@ -7,7 +7,7 @@ on:
     - cron: '0 0 * * *'
 
   pull_request:
-    types: [labeled] # , synchronize
+    types: [labeled, synchronize] # , synchronize
 
 jobs:
   get-ref:
@@ -81,6 +81,10 @@ jobs:
       - name: Install libudev development package
         if: matrix.run_on == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install -y libudev-dev
+
+      - name: Install compilation tools for Windows
+        if: matrix.target == 'x86_64-pc-windows-gnu'
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64
 
       - name: Set up Rust (nightly)
         uses: dtolnay/rust-toolchain@stable

@@ -83,6 +83,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+            ref: ${{ needs.select-ref.outputs.ref }}
 
       - name: Install libudev development package
         if: matrix.run_on == 'ubuntu-latest'
@@ -175,8 +177,13 @@ jobs:
   release:
     needs: [build, select-ref]
     runs-on: ubuntu-latest
-
+    
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+            ref: ${{ needs.select-ref.outputs.ref }}
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:

@@ -121,7 +121,7 @@ jobs:
         run: |
           echo "${{ secrets.APPLE_CODESIGN_KEY }}" | base64 --decode > cert.p12
           mkdir -p private_keys/
-          echo '${{ secrets.APPLE_APP_STORE_CONNECT_KEY }}' | base64 --decode > private_keys/AuthKey_32BCL596RC.p12
+          echo '${{ secrets.APPLE_APP_STORE_CONNECT_KEY }}' > private_keys/AuthKey_32BCL596RC.p12
 
 
       - name: Apple Code Signing

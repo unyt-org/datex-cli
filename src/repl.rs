@@ -1,11 +1,11 @@
-use datex_core::values::core_values::endpoint::Endpoint;
-use datex_core::decompiler::{apply_syntax_highlighting, decompile_value, DecompileOptions};
-use datex_core::runtime::{Runtime};
+use datex_core::decompiler::{DecompileOptions, apply_syntax_highlighting, decompile_value};
+use datex_core::runtime::Runtime;
 use datex_core::runtime::execution_context::{ExecutionContext, ScriptExecutionError};
+use datex_core::values::core_values::endpoint::Endpoint;
+use rustyline::Helper;
 use rustyline::completion::Completer;
 use rustyline::config::Configurer;
 use rustyline::error::ReadlineError;
-use rustyline::Helper;
 use rustyline::highlight::{CmdKind, Highlighter};
 use rustyline::hint::Hinter;
 use rustyline::validate::{ValidationContext, ValidationResult, Validator};
@@ -81,7 +81,11 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
     rl.set_auto_add_history(true);
 
     // create context
-    let mut execution_context = if options.verbose { ExecutionContext::local_debug() } else { ExecutionContext::local() };
+    let mut execution_context = if options.verbose {
+        ExecutionContext::local_debug()
+    } else {
+        ExecutionContext::local()
+    };
     loop {
         let readline = rl.readline("> ");
         match readline {

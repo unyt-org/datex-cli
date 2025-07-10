@@ -159,7 +159,7 @@ jobs:
               run: |
                   cargo build --release --target=${{ matrix.target }}
 
-            - name: Sign binary (for macOS)
+            - name: Sign binary (macOS)
               if: contains(matrix.target, 'apple-darwin')
               env:
                 CODESIGN_IDENTITY: "YQGEQT9JE6"
@@ -168,6 +168,21 @@ jobs:
                 codesign --sign "$CODESIGN_IDENTITY" \
                   --prefix "$CODESIGN_PREFIX" \
                   --options runtime target/${{ matrix.target }}/release/datex_cli
+
+            - name: Zip the binary for notarization (macOS)
+              if: contains(matrix.target, 'apple-darwin')
+              run: zip -r $RUNNER_TEMP/datex-signed.zip target/${{ matrix.target }}/release/datex_cli
+            - name: Upload the binary for notarization (macOS)
+              if: contains(matrix.target, 'apple-darwin')
+              env:
+                APPLE_APP_STORE_KEY_ID: ${{ secrets.APPLE_APP_STORE_KEY_ID }}
+                APPLE_APP_STORE_ISSUER: ${{ secrets.APPLE_APP_STORE_ISSUER }}
+              run: |
+                xcrun notarytool submit $RUNNER_TEMP/datex-signed.zip \
+                  --key "${{ steps.keychain.outputs.auth_key_path }}" \
+                  --key-id "$APPLE_APP_STORE_KEY_ID" \
+                  --issuer "$APPLE_APP_STORE_ISSUER" \
+                  --wait
             # - name: Install Deno
             #   uses: denoland/setup-deno@v2
             #   with:

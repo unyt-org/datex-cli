@@ -115,11 +115,23 @@ jobs:
       - name: Build binary
         run: |
           cargo build --release --target=${{ matrix.target }}
-      
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install post-build
+        id: choose
+        run: |
+          set -eo pipefail
+          .github/tools/install-codesign.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Apple Code Signing
         if: contains(matrix.target, 'apple-darwin')
         run: |
-           cargo install apple-codesign 
            echo '${{ secrets.APPLE_APP_STORE_CONNECT_KEY }}' > auth.json
            echo "Key is $(echo $APPLE_CODESIGN_KEY | base64 -d | wc -c) bytes"
            rcodesign sign target/${{ matrix.target }}/release/datex_cli --code-signature-flags=runtime --p12-password="$APPLE_CODESIGN_PASSWORD" --p12-file=<(echo $APPLE_CODESIGN_KEY | base64 -d) --entitlements-xml-file=cli/entitlements.plist

@@ -135,10 +135,13 @@ jobs:
               if: contains(matrix.target, 'apple-darwin')
               run: |
                   ${{ steps.install_sign_tools.outputs.rcodesign_path }} --help
-                  echo '${{ secrets.APPLE_APP_STORE_CONNECT_KEY }}' > auth.json
+                  echo $APPLE_APP_STORE_CONNECT_KEY > auth.json
                   echo "Key is $(echo $APPLE_CODESIGN_KEY | base64 -d | wc -c) bytes"
                   ${{ steps.install_sign_tools.outputs.rcodesign_path }} sign target/${{ matrix.target }}/release/datex_cli --code-signature-flags=runtime --p12-password="$APPLE_CODESIGN_PASSWORD" --p12-file=<(echo $APPLE_CODESIGN_KEY | base64 -d) --entitlements-xml-file=cli/entitlements.plist
-
+              env:
+                  APPLE_CODESIGN_KEY: "${{ secrets.APPLE_CODESIGN_KEY }}"
+                  APPLE_CODESIGN_PASSWORD: "${{ secrets.APPLE_CODESIGN_PASSWORD }}"
+                  APPLE_APP_STORE_CONNECT_KEY: "${{ secrets.APPLE_APP_STORE_CONNECT_KEY }}"
             - name: Package binary
               run: |
                   mkdir -p dist

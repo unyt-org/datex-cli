@@ -79,7 +79,7 @@ const extractCmd = isZip
 
 await extractCmd.output();
 
-const binPath = `${outDir}/${artifactName.split(".")[0]}/rcodesign`;
+const binPath = `${outDir}/${artifactName.replace(".tar.gz", "").replace(".zip", "")}/rcodesign`;
 await Deno.chmod(binPath, 0o755);
 
 Deno.exit(0);

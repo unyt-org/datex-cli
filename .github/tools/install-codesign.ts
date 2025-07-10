@@ -1,6 +1,6 @@
-#!/usr/bin/env -S deno run --allow-env=GITHUB_TOKEN,GITHUB_OUTPUT --allow-write --allow-net
+#!/usr/bin/env -S deno run -A
 import { Octokit } from "https://esm.sh/octokit@5.0.3?dts";
-
+// --allow-env=GITHUB_TOKEN --allow-write --allow-net
 const token = Deno.env.get("GITHUB_TOKEN");
 if (!token) {
     console.error("GITHUB_TOKEN not set");
@@ -65,14 +65,21 @@ console.info(`Found asset: ${asset.name} (${asset.id})`);
 const downloadUrl = asset.browser_download_url;
 console.info(`Downloading from ${downloadUrl}`);
 const response = await fetch(downloadUrl);
-const file = await Deno.open(artifactName, { create: true, write: true })
-await response.body!.pipeTo(file.writable);
+const tarFile = await Deno.open(artifactName, { create: true, write: true })
+await response.body!.pipeTo(tarFile.writable);
 
-console.info(`Downloaded ${artifactName} (${response.headers.get("content-length")} bytes)`);
-const outPath = Deno.env.get("GITHUB_OUTPUT");
-if (outPath) {
-    await Deno.writeTextFile(outPath, `rcodesign_path=${Deno.cwd()}/${artifactName}\n`, {
-        append: true,
-    });
-}
+const outDir = "./bin";
+const isZip = artifactName.endsWith(".zip");
+const archive = isZip ? "rcodesign.zip" : "rcodesign.tar.gz";
+
+await Deno.mkdir(outDir, { recursive: true });
+const extractCmd = isZip
+  ? new Deno.Command("unzip", {args: ["-o", archive, "-d", outDir]})
+  : new Deno.Command("tar", {args: ["-xzf", archive, "-C", outDir]});
+
+await extractCmd.output();
+
+const binPath = `${outDir}/rcodesign`;
+await Deno.chmod(binPath, 0o755);
+
 Deno.exit(0);

@@ -127,6 +127,7 @@ jobs:
               run: |
                   set -eo pipefail
                   .github/tools/install-codesign.ts
+                  echo "${{ github.workspace }}/bin" >> $GITHUB_PATH
               env:
                   VERSION: 0.29.0
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

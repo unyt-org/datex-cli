@@ -138,7 +138,7 @@ jobs:
                   echo $APPLE_APP_STORE_CONNECT_KEY > key.json
                   echo "Key is $(echo $APPLE_CODESIGN_KEY | base64 -d | wc -c) bytes"
                   ${{ steps.install_sign_tools.outputs.rcodesign_path }} sign target/${{ matrix.target }}/release/datex_cli --code-signature-flags=runtime --p12-password="$APPLE_CODESIGN_PASSWORD" --p12-file=<(echo $APPLE_CODESIGN_KEY | base64 -d) --entitlements-xml-file=cli/entitlements.plist
-                  ${{ steps.install_sign_tools.outputs.rcodesign_path }} notary-submit --api-key-path key.json --stable target/${{ matrix.target }}/release/datex_cli
+                  ${{ steps.install_sign_tools.outputs.rcodesign_path }} notary-submit --api-key-path key.json --staple target/${{ matrix.target }}/release/datex_cli
 
               env:
                   APPLE_CODESIGN_KEY: "${{ secrets.APPLE_CODESIGN_KEY }}"

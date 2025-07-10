@@ -77,9 +77,17 @@ const extractCmd = isZip
   ? new Deno.Command("unzip", {args: ["-o", archive, "-d", outDir]})
   : new Deno.Command("tar", {args: ["-xzf", archive, "-C", outDir]});
 
-await extractCmd.output();
+const { success } = await extractCmd.output();
+if (!success) {
+  console.error("Extraction failed");
+  Deno.exit(1);
+}
+
+await new Deno.Command("ls", {args: ["-l"]}).output();
+
 
 const binPath = `${outDir}/${artifactName.replace(".tar.gz", "").replace(".zip", "")}/rcodesign`;
-await Deno.chmod(binPath, 0o755);
+console.log(binPath)
+//await Deno.chmod(binPath, 0o755);
 
 Deno.exit(0);

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-env=GITHUB_TOKEN,GITHUB_REPOSITORY,GITHUB_OUTPUT --allow-write --allow-net=api.github.com
+#!/usr/bin/env -S deno run --allow-env=GITHUB_TOKEN,GITHUB_REPOSITORY,GITHUB_OUTPUT --allow-write --allow-net=api.github.com,github.com
 import { Octokit } from "https://esm.sh/octokit@5.0.3?dts";
 const token = Deno.env.get("GITHUB_TOKEN");
 if (!token) {

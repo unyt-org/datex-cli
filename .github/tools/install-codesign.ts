@@ -68,13 +68,14 @@ const response = await fetch(downloadUrl);
 const compressedFile = await Deno.open(artifactName, { create: true, write: true })
 await response.body!.pipeTo(compressedFile.writable);
 
-const outDir = "./bin";
-const isZip = artifactName.endsWith(".zip");
-
+const outDir = "./bin/";
+const outFile = outDir + "rcodesign";
+const tmpDir = "/tmp/";
 await Deno.mkdir(outDir, { recursive: true });
-const extractCmd = isZip
-  ? new Deno.Command("unzip", {args: ["-o", artifactName, "-d", outDir]})
-  : new Deno.Command("tar", {args: ["-xzf", artifactName, "-C", outDir]});
+
+const extractCmd = artifactName.endsWith(".zip")
+  ? new Deno.Command("unzip", {args: ["-o", artifactName, "-d", tmpDir]})
+  : new Deno.Command("tar", {args: ["-xzf", artifactName, "-C", tmpDir]});
 
 const { success } = await extractCmd.output();
 if (!success) {
@@ -82,10 +83,8 @@ if (!success) {
   Deno.exit(1);
 }
 
-await new Deno.Command("ls", {args: ["-l"]}).output();
-
-const binPath = `${outDir}/${artifactName.replace(".tar.gz", "").replace(".zip", "")}/rcodesign`;
-console.log(binPath)
-await Deno.chmod(binPath, 0o755);
+const binPath = `${tmpDir}/${artifactName.replace(".tar.gz", "").replace(".zip", "")}/rcodesign`;
+Deno.copyFile(binPath, outFile);
+await Deno.chmod(outFile, 0o755);
 
 Deno.exit(0);

@@ -6,12 +6,8 @@ if (!token) {
     console.error("GITHUB_TOKEN not set");
     Deno.exit(1);
 }
-const repoFull = Deno.env.get("GITHUB_REPOSITORY");
-if (!repoFull) {
-    console.error("GITHUB_REPOSITORY not set");
-    Deno.exit(1);
-}
-const [owner, repo] = repoFull.split("/");
+
+const [owner, repo] = "indygreg/apple-platform-rs".split("/");
 const octokit = new Octokit({ auth: token });
 
 const getTag = async (version: string) => {

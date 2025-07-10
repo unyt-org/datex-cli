@@ -47,7 +47,7 @@ const release = await octokit.request(
     tag,
   }
 );
-console.info(`Found release: ${release.data.tag_name} (${release.data.id})`);
+console.info(`Found release: ${tag} (${release.data.id})`);
 
 if (!release.data.assets || release.data.assets.length === 0) {
     console.error("No assets found in release");
@@ -67,12 +67,11 @@ console.info(`Downloading from ${downloadUrl}`);
 const response = await fetch(downloadUrl);
 const file = await Deno.open(artifactName, { create: true, write: true })
 await response.body!.pipeTo(file.writable);
-file.close();
 
 console.info(`Downloaded ${artifactName} (${response.headers.get("content-length")} bytes)`);
 const outPath = Deno.env.get("GITHUB_OUTPUT");
 if (outPath) {
-    await Deno.writeTextFile(outPath, `codesign=${Deno.cwd()}/${artifactName}\n`, {
+    await Deno.writeTextFile(outPath, `rcodesign_path=${Deno.cwd()}/${artifactName}\n`, {
         append: true,
     });
 }

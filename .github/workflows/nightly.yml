@@ -158,6 +158,8 @@ jobs:
             - name: Build binary
               run: |
                   cargo build --release --target=${{ matrix.target }}
+                  # rename the binary to datex
+                  mv target/${{ matrix.target }}/release/datex_cli${{ matrix.ext }} target/${{ matrix.target }}/release/datex${{ matrix.ext }}
 
             - name: Sign binary (macOS)
               if: contains(matrix.target, 'apple-darwin')
@@ -167,11 +169,12 @@ jobs:
               run: |
                 codesign --sign "$CODESIGN_IDENTITY" \
                   --prefix "$CODESIGN_PREFIX" \
-                  --options runtime target/${{ matrix.target }}/release/datex_cli
+                  --options runtime target/${{ matrix.target }}/release/datex
 
             - name: Zip the binary for notarization (macOS)
               if: contains(matrix.target, 'apple-darwin')
-              run: zip -r $RUNNER_TEMP/datex-signed.zip target/${{ matrix.target }}/release/datex_cli
+              run: zip -r $RUNNER_TEMP/datex-signed.zip target/${{ matrix.target }}/release/datex
+
             - name: Upload the binary for notarization (macOS)
               if: contains(matrix.target, 'apple-darwin')
               env:
@@ -215,7 +218,7 @@ jobs:
                   mkdir -p dist
                   TARGET_DIR=target/${{ matrix.target }}/release
                   OUTPUT_NAME=datex-${{ matrix.target }}
-                  cp ${TARGET_DIR}/datex_cli${{ matrix.ext }} dist/datex${{ matrix.ext }}
+                  cp ${TARGET_DIR}/datex${{ matrix.ext }} dist/datex${{ matrix.ext }}
                   cd dist && zip ${OUTPUT_NAME}.zip datex${{ matrix.ext }}
               shell: bash
 

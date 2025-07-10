@@ -116,26 +116,14 @@ jobs:
         run: |
           cargo build --release --target=${{ matrix.target }}
       
-      - name: Import signing certificate
-        if: contains(matrix.target, 'apple-darwin')
-        run: |
-          echo "${{ secrets.APPLE_CODESIGN_KEY }}" | base64 --decode > cert.p12
-          echo '${{ secrets.APPLE_APP_STORE_CONNECT_KEY }}' > auth.json
-
-
       - name: Apple Code Signing
         if: contains(matrix.target, 'apple-darwin')
-        uses: indygreg/apple-code-sign-action@v1
-        with:
-          input_path: target/${{ matrix.target }}/release/datex_cli
-          notarize: true
-          staple: true
-          p12_file: cert.p12
-          p12_password: ${{ secrets.APPLE_CODESIGN_PASSWORD }}
-        #   app_store_connect_api_issuer: '69a6de92-35f2-47e3-e053-5b8c7c11a4d1'
-          app_store_connect_api_key_json_file: 'auth.json'
-        #   app_store_connect_api_key: '32BCL596RC'
-      
+        run: |
+           cargo install apple-codesign 
+           echo '${{ secrets.APPLE_APP_STORE_CONNECT_KEY }}' > auth.json
+           echo "Key is $(echo $APPLE_CODESIGN_KEY | base64 -d | wc -c) bytes"
+           rcodesign sign target/${{ matrix.target }}/release/datex_cli --code-signature-flags=runtime --p12-password="$APPLE_CODESIGN_PASSWORD" --p12-file=<(echo $APPLE_CODESIGN_KEY | base64 -d) --entitlements-xml-file=cli/entitlements.plist
+          
       - name: Package binary
         run: |
           mkdir -p dist

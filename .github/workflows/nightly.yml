@@ -162,7 +162,7 @@ jobs:
             - name: Sign binary (for macOS)
               if: contains(matrix.target, 'apple-darwin')
               env:
-                CODESIGN_IDENTITY: "32BCL596RC"
+                CODESIGN_IDENTITY: "YQGEQT9JE6"
                 CODESIGN_PREFIX: "org.unyt.datex."
               run: |
                 codesign --sign "$CODESIGN_IDENTITY" \

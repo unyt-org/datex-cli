@@ -1,0 +1,192 @@
+name: Nightly Build
+
+on:
+    workflow_dispatch:
+
+    schedule:
+        - cron: "0 0 * * *"
+
+    pull_request:
+        types: [labeled, synchronize] # , synchronize
+
+jobs:
+    get-ref:
+        name: Get nightly ref
+        runs-on: ubuntu-latest
+        outputs:
+            ref: ${{ steps.choose.outputs.ref }}
+            tag_suffix: ${{ steps.choose.outputs.tag_suffix }}
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - name: Install Deno
+              uses: denoland/setup-deno@v2
+              with:
+                  deno-version: v2.x
+            - name: Get latest commit hash
+              id: choose
+              run: |
+                  set -eo pipefail
+                  .github/tools/get-nightly-ref.ts
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GITHUB_REPOSITORY: ${{ github.repository }}
+            - name: Check pull request ref
+              if: github.event_name == 'pull_request'
+              run: |
+                  set -eo pipefail
+                  echo "Checking if the pull request ref matches the expected ref..."
+                  echo "Expected ref: ${{ steps.choose.outputs.ref }}"
+                  echo "Pull request head ref commit sha: ${{ github.event.pull_request.head.sha }}"
+                  if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.sha }}" != "${{ steps.choose.outputs.ref }}" ]]; then
+                    echo "Pull request ref does not match the expected ref. Aborting."
+                    exit 1
+                  fi
+
+    build:
+        needs: get-ref
+        strategy:
+            matrix:
+                include:
+                    # Linux
+                    #   - target: x86_64-unknown-linux-gnu
+                    #     os_name: linux-x86_64
+                    #     run_on: ubuntu-latest
+                    #     ext: ''
+                    # macOS
+                    #   - target: x86_64-apple-darwin
+                    #     os_name: macos-x86_64
+                    #     run_on: macos-latest
+                    #     ext: ''
+                    - target: aarch64-apple-darwin
+                      os_name: macos-aarch64
+                      run_on: macos-latest
+                      ext: ""
+                    # Windows
+                #   - target: x86_64-pc-windows-gnu
+                #     os_name: windows-x86_64
+                #     run_on: ubuntu-latest
+                #     ext: '.exe'
+        runs-on: ${{ matrix.run_on }}
+        name: Build on ${{ matrix.target }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ needs.get-ref.outputs.ref }}
+
+            - name: Install libudev development package
+              if: matrix.run_on == 'ubuntu-latest'
+              run: sudo apt-get update && sudo apt-get install -y libudev-dev
+
+            - name: Install compilation tools for Windows
+              if: matrix.target == 'x86_64-pc-windows-gnu'
+              run: sudo apt-get update && sudo apt-get install -y mingw-w64
+
+            - name: Set up Rust (nightly)
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  toolchain: nightly-2025-07-04
+
+            - name: Install Rust target
+              run: rustup target add ${{ matrix.target }}
+
+            - name: Cache Cargo registry
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/registry
+                      ~/.cargo/git
+                  key: ${{ matrix.os_name }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+                  restore-keys: |
+                      ${{ matrix.os_name }}-cargo-registry-
+
+            - name: Cache Cargo build
+              uses: actions/cache@v4
+              with:
+                  path: target
+                  key: ${{ matrix.os_name }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+                  restore-keys: |
+                      ${{ matrix.os_name }}-cargo-build-
+
+            - name: Build binary
+              run: |
+                  cargo build --release --target=${{ matrix.target }}
+
+            - name: Install Deno
+              uses: denoland/setup-deno@v2
+              with:
+                  deno-version: v2.x
+
+            - name: Install code signing tools
+              if: contains(matrix.target, 'apple-darwin')
+              run: |
+                  set -eo pipefail
+                  .github/tools/install-codesign.ts
+              env:
+                  VERSION: 0.29.0
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Apple Code Signing
+              if: contains(matrix.target, 'apple-darwin')
+              run: |
+                  echo '${{ secrets.APPLE_APP_STORE_CONNECT_KEY }}' > auth.json
+                  echo "Key is $(echo $APPLE_CODESIGN_KEY | base64 -d | wc -c) bytes"
+                  rcodesign sign target/${{ matrix.target }}/release/datex_cli --code-signature-flags=runtime --p12-password="$APPLE_CODESIGN_PASSWORD" --p12-file=<(echo $APPLE_CODESIGN_KEY | base64 -d) --entitlements-xml-file=cli/entitlements.plist
+
+            - name: Package binary
+              run: |
+                  mkdir -p dist
+                  TARGET_DIR=target/${{ matrix.target }}/release
+                  OUTPUT_NAME=datex-${{ matrix.target }}
+                  cp ${TARGET_DIR}/datex_cli${{ matrix.ext }} dist/datex${{ matrix.ext }}
+                  cd dist && zip ${OUTPUT_NAME}.zip datex${{ matrix.ext }}
+              shell: bash
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ matrix.os_name }}
+                  path: dist/datex-${{ matrix.target }}.zip
+        continue-on-error: true
+
+    release:
+        needs: [build, get-ref]
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ needs.get-ref.outputs.ref }}
+
+            - name: Download artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  path: dist
+
+            - name: Publish/Update nightly release
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  set -eo pipefail
+                  TAG="nightly"
+                  TITLE="Nightly build ($(date -u +'%Y-%m-%d'))"
+                  TARGET="${{ needs.get-ref.outputs.ref }}"
+                  TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+                  if gh release view "$TAG" >/dev/null 2>&1; then
+                    echo "Updating existing nightly release - clobbering assets"
+                    gh release upload  "$TAG" dist/**/*.zip --clobber
+                    gh release edit     "$TAG" --title "$TITLE" --prerelease \
+                                        --notes "Nightly build for $TARGET at $TIME" \
+                                        --target "$TARGET"
+                  else
+                    echo "Creating new nightly release"
+                    gh release create   "$TAG" dist/**/*.zip \
+                                        --title "$TITLE" --prerelease \
+                                        --target "$TARGET"
+                  fi

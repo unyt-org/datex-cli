@@ -86,6 +86,49 @@ jobs:
               if: matrix.target == 'x86_64-pc-windows-gnu'
               run: sudo apt-get update && sudo apt-get install -y mingw-w64
 
+            - name: Install the Apple certificate, provisioning profile, and API key (macOS)
+              if: contains(matrix.target, 'apple-darwin')
+              id: keychain
+              env:
+                APPLE_CODESIGN_KEY: ${{ secrets.APPLE_CODESIGN_KEY }}
+                APPLE_CODESIGN_PASSWORD: ${{ secrets.APPLE_CODESIGN_PASSWORD }}
+                APPLE_PROVISION_PROFILE: ${{ secrets.APPLE_PROVISION_PROFILE }}
+                APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+                APPLE_AUTH_KEY: ${{ secrets.APPLE_AUTH_KEY }}
+              run: |
+                # create variables
+                CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+                PP_PATH=$RUNNER_TEMP/build_pp.provisionprofile
+                KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+                AUTH_KEY_PATH=$RUNNER_TEMP/AuthKey.p8
+
+                # import certificate and provisioning profile from secrets
+                echo -n "$APPLE_CODESIGN_KEY" | base64 --decode -o $CERTIFICATE_PATH
+                echo -n "$APPLE_PROVISION_PROFILE" | base64 --decode -o $PP_PATH
+
+                # create temporary keychain
+                security create-keychain -p "$APPLE_KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+                security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+                security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+                # import certificate to keychain
+                security import $CERTIFICATE_PATH -P "$APPLE_CODESIGN_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+                security set-key-partition-list -S apple-tool:,apple: -k "$APPLE_KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+                security list-keychain -d user -s $KEYCHAIN_PATH
+
+                # apply provisioning profile
+                mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+                cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+
+                # create auth key file for notarization
+                echo -n "$APPLE_AUTH_KEY" | base64 --decode -o $AUTH_KEY_PATH
+
+                # setup outputs
+                echo "auth_key_path=$AUTH_KEY_PATH" >> $GITHUB_OUTPUT
+                echo "keychain_path=$KEYCHAIN_PATH" >> $GITHUB_OUTPUT
+                echo "pp_path=$PP_PATH" >> $GITHUB_OUTPUT
+                echo "certificate_path=$CERTIFICATE_PATH" >> $GITHUB_OUTPUT
+
             - name: Set up Rust (nightly)
               uses: dtolnay/rust-toolchain@stable
               with:
@@ -116,33 +159,42 @@ jobs:
               run: |
                   cargo build --release --target=${{ matrix.target }}
 
-            - name: Install Deno
-              uses: denoland/setup-deno@v2
-              with:
-                  deno-version: v2.x
-
-            - name: Install Code Signing Tools
-              id: install_sign_tools
+            - name: Sign binary (for macOS)
               if: contains(matrix.target, 'apple-darwin')
-              run: |
-                  set -eo pipefail
-                  .github/tools/install-codesign.ts
               env:
-                  VERSION: 0.29.0
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            # --for-notarization
-            - name: Apple Code Signing
-              if: contains(matrix.target, 'apple-darwin')
+                CODESIGN_IDENTITY: "32BCL596RC"
+                CODESIGN_PREFIX: "org.unyt.datex."
               run: |
-                  echo $APPLE_APP_STORE_CONNECT_KEY > key.json
-                  echo "Key is $(echo $APPLE_CODESIGN_KEY | base64 -d | wc -c) bytes"
-                  ${{ steps.install_sign_tools.outputs.rcodesign_path }} sign target/${{ matrix.target }}/release/datex_cli --code-signature-flags=runtime --p12-password="$APPLE_CODESIGN_PASSWORD" --p12-file=<(echo $APPLE_CODESIGN_KEY | base64 -d) --entitlements-xml-file=cli/entitlements.plist
-                  ${{ steps.install_sign_tools.outputs.rcodesign_path }} notary-submit --api-key-file key.json --staple target/${{ matrix.target }}/release/datex_cli
+                codesign --sign "$CODESIGN_IDENTITY" \
+                  --prefix "$CODESIGN_PREFIX" \
+                  --options runtime target/${{ matrix.target }}/release/datex_cli
+            # - name: Install Deno
+            #   uses: denoland/setup-deno@v2
+            #   with:
+            #       deno-version: v2.x
 
-              env:
-                  APPLE_CODESIGN_KEY: "${{ secrets.APPLE_CODESIGN_KEY }}"
-                  APPLE_CODESIGN_PASSWORD: "${{ secrets.APPLE_CODESIGN_PASSWORD }}"
-                  APPLE_APP_STORE_CONNECT_KEY: "${{ secrets.APPLE_APP_STORE_CONNECT_KEY }}"
+            # - name: Install Code Signing Tools
+            #   id: install_sign_tools
+            #   if: contains(matrix.target, 'apple-darwin')
+            #   run: |
+            #       set -eo pipefail
+            #       .github/tools/install-codesign.ts
+            #   env:
+            #       VERSION: 0.29.0
+            #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            # # --for-notarization
+            # - name: Apple Code Signing
+            #   if: contains(matrix.target, 'apple-darwin')
+            #   run: |
+            #       echo $APPLE_APP_STORE_CONNECT_KEY > key.json
+            #       echo "Key is $(echo $APPLE_CODESIGN_KEY | base64 -d | wc -c) bytes"
+            #       ${{ steps.install_sign_tools.outputs.rcodesign_path }} sign target/${{ matrix.target }}/release/datex_cli --code-signature-flags=runtime --p12-password="$APPLE_CODESIGN_PASSWORD" --p12-file=<(echo $APPLE_CODESIGN_KEY | base64 -d) --entitlements-xml-file=cli/entitlements.plist
+            #       ${{ steps.install_sign_tools.outputs.rcodesign_path }} notary-submit --api-key-file key.json --staple target/${{ matrix.target }}/release/datex_cli
+
+            #   env:
+            #       APPLE_CODESIGN_KEY: "${{ secrets.APPLE_CODESIGN_KEY }}"
+            #       APPLE_CODESIGN_PASSWORD: "${{ secrets.APPLE_CODESIGN_PASSWORD }}"
+            #       APPLE_APP_STORE_CONNECT_KEY: "${{ secrets.APPLE_APP_STORE_CONNECT_KEY }}"
             - name: Package binary
               run: |
                   mkdir -p dist

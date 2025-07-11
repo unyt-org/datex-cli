@@ -168,6 +168,7 @@ jobs:
                 CODESIGN_PREFIX: "org.unyt.datex."
               run: |
                 codesign --sign "$CODESIGN_IDENTITY" \
+                  --entitlements ./cli/entitlements.plist \
                   --prefix "$CODESIGN_PREFIX" \
                   --options runtime target/${{ matrix.target }}/release/datex
 

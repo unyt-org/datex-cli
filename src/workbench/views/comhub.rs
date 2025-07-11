@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Rc;
 use datex_core::network::com_interfaces::com_interface_properties::InterfaceDirection;
 use datex_core::runtime::Runtime;
 use ratatui::style::{Color, Style};
@@ -11,9 +9,11 @@ use ratatui::{
     text::{Line, Text},
     widgets::{Block, Paragraph, Widget},
 };
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub struct ComHub {
-    pub runtime: Rc<RefCell<Runtime>>
+    pub runtime: Rc<RefCell<Runtime>>,
 }
 
 impl Widget for &ComHub {
@@ -46,7 +46,9 @@ impl Widget for &ComHub {
                 match &interface.properties.name {
                     Some(name) => format!("{} ({})", interface.properties.channel, name),
                     None => format!("{}", interface.properties.channel),
-                }.to_string().bold()
+                }
+                .to_string()
+                .bold(),
             ]));
 
             // iterate sockets

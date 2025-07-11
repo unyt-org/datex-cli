@@ -18,14 +18,14 @@ use tokio::task::LocalSet;
 
 mod command_line_args;
 mod lsp;
-mod workbench;
 mod repl;
+mod workbench;
 
-use command_line_args::{get_command, Subcommands};
-use tower_lsp::{LspService, Server};
 use crate::command_line_args::Repl;
 use crate::lsp::Backend;
-use crate::repl::{repl, ReplOptions};
+use crate::repl::{ReplOptions, repl};
+use command_line_args::{Subcommands, get_command};
+use tower_lsp::{LspService, Server};
 
 #[tokio::main]
 async fn main() {
@@ -47,8 +47,8 @@ async fn main() {
                 }
                 let runtime = Runtime::new(Endpoint::default());
             }
-            Subcommands::Repl(Repl{verbose}) => {
-                let options = ReplOptions {verbose};
+            Subcommands::Repl(Repl { verbose }) => {
+                let options = ReplOptions { verbose };
                 repl(options).await.unwrap();
             }
             Subcommands::Workbench(_) => {
@@ -74,8 +74,14 @@ async fn workbench() {
 
     // add socket server interface
     let socket_interface = WebSocketServerNativeInterface::new(1234).unwrap();
-    runtime.borrow().com_hub.add_interface(Rc::new(RefCell::new(socket_interface)), InterfacePriority::Priority(1)).unwrap();
+    runtime
+        .borrow()
+        .com_hub
+        .add_interface(
+            Rc::new(RefCell::new(socket_interface)),
+            InterfacePriority::Priority(1),
+        )
+        .unwrap();
 
     workbench::start_workbench(runtime).await.unwrap();
 }
-

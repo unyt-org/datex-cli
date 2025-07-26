@@ -187,6 +187,9 @@ jobs:
                   --key-id "$APPLE_APP_STORE_KEY_ID" \
                   --issuer "$APPLE_APP_STORE_ISSUER" \
                   --wait
+            - name: Check notarization
+              run: |
+                codesign -vvvv -R="notarized" --check-notarization target/${{ matrix.target }}/release/datex
                 spctl -a -vvv -t install target/${{ matrix.target }}/release/datex
             # - name: Install Deno
             #   uses: denoland/setup-deno@v2

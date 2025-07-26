@@ -895,6 +895,7 @@ dependencies = [
  "clap",
  "crossterm",
  "datex-core",
+ "home",
  "lazy_static",
  "ratatui",
  "rustyline",

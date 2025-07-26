@@ -1,5 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use std::thread::spawn;
+use std::time::Duration;
 use datex_core::crypto::crypto_native::CryptoNative;
 use datex_core::decompiler::{DecompileOptions, apply_syntax_highlighting, decompile_value};
 use datex_core::run_async;
@@ -19,6 +21,7 @@ use rustyline::highlight::{CmdKind, Highlighter};
 use rustyline::hint::Hinter;
 use rustyline::validate::{ValidationContext, ValidationResult, Validator};
 use serde::Deserialize;
+use tokio::time::sleep;
 
 struct DatexSyntaxHelper;
 
@@ -118,13 +121,13 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
         None => RuntimeConfig::new_with_endpoint(Endpoint::random()),
     };
 
+    let (cmd_sender, mut cmd_receiver) = tokio::sync::mpsc::channel::<ReplCommand>(100);
+    let (response_sender, response_receiver) = tokio::sync::mpsc::channel::<ReplResponse>(100);
+    repl_loop(cmd_sender, response_receiver)?;
+
     run_async! {
         let runtime = Runtime::create_native(config).await;
 
-        let mut rl = rustyline::Editor::<DatexSyntaxHelper, _>::new()?;
-        rl.set_helper(Some(DatexSyntaxHelper));
-        rl.enable_bracketed_paste(true);
-        rl.set_auto_add_history(true);
 
         // create context
         let mut execution_context = if options.verbose {
@@ -132,39 +135,98 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
         } else {
             ExecutionContext::local()
         };
-        loop {
-            let readline = rl.readline("> ");
-            match readline {
-                Ok(line) => {
-                    // special case: if the user entered "clear", clear the console
-                    if line.trim() == "clear" {
-                        rl.clear_screen()?;
-                        continue;
-                    }
 
+        while let Some(command) = cmd_receiver.recv().await {
+            match command {
+                ReplCommand::Debug => {
+                    let metadata = runtime.com_hub().get_metadata().to_string();
+                    response_sender.send(ReplResponse::Result(Some(metadata))).await.unwrap();
+                }
+                ReplCommand::Execute(line) => {
                     let result = runtime.execute(&line, &[], Some(&mut execution_context)).await;
+
+                    let mut result_string = None;
 
                     if let Err(e) = result {
                         match e {
                             ScriptExecutionError::CompilerError(e) => {
-                                println!("\x1b[31m[Compiler Error] {e}\x1b[0m");
+                                result_string = Some(format!("\x1b[31m[Compiler Error] {e}\x1b[0m"));
                             }
                             ScriptExecutionError::ExecutionError(e) => {
-                                println!("\x1b[31m[Execution Error] {e}\x1b[0m");
+                                result_string = Some(format!("\x1b[31m[Execution Error] {e}\x1b[0m"));
                             }
                         }
-                        continue;
                     }
 
-                    if let Some(result) = result.unwrap() {
+                    else if let Some(result) = result.unwrap() {
                         let decompiled_value = decompile_value(&result, DecompileOptions::colorized());
-                        println!("< {decompiled_value}");
+                        result_string = Some(format!("< {decompiled_value}"));
                     }
+                    else {
+                        result_string = None;
+                    }
+
+                    response_sender.send(ReplResponse::Result(result_string)).await.unwrap();
                 }
-                Err(_) => break,
             }
         }
 
         Ok(())
     }
+}
+
+
+enum ReplCommand {
+    Debug,
+    Execute(String),
+}
+
+enum ReplResponse {
+    Result(Option<String>),
+}
+
+fn repl_loop(
+    sender: tokio::sync::mpsc::Sender<ReplCommand>,
+    mut receiver: tokio::sync::mpsc::Receiver<ReplResponse>,
+) -> Result<(), ReplError> {
+
+    let mut rl = rustyline::Editor::<DatexSyntaxHelper, _>::new()?;
+    rl.set_helper(Some(DatexSyntaxHelper));
+    rl.enable_bracketed_paste(true);
+    rl.set_auto_add_history(true);
+
+    spawn(move || {
+        loop {
+            let readline = rl.readline("> ");
+            match readline {
+                Ok(line) => {
+                    match line.trim() {
+                        "clear" => {
+                            rl.clear_screen().unwrap();
+                            continue;
+                        },
+                        "debug" => {
+                            sender.blocking_send(ReplCommand::Debug).unwrap();
+                        },
+                        _ => {
+                            sender.blocking_send(ReplCommand::Execute(line.clone())).unwrap();
+                        }
+                    }
+                }
+                Err(_) => break,
+            }
+
+            let response = receiver.blocking_recv();
+            match response {
+                Some(ReplResponse::Result(result)) => {
+                    if let Some(result) = result {
+                        println!("{result}");
+                    }
+                }
+                None => { break; }
+            }
+        }
+    });
+
+    Ok(())
 }

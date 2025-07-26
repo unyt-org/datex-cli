@@ -145,7 +145,7 @@ fn create_new_config_file(base_path: PathBuf, endpoint: Endpoint) -> Result<Path
 
     // add default interface
     config.add_interface("websocket-client".to_string(), WebSocketClientInterfaceSetupData {
-        address: "ws://example.unyt.org:8080".to_string(),
+        address: "wss://example.unyt.land".to_string(),
     })?;
 
     let mut config_path = base_path.clone();

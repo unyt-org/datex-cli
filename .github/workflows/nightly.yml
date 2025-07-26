@@ -188,6 +188,7 @@ jobs:
                   --issuer "$APPLE_APP_STORE_ISSUER" \
                   --wait
             - name: Check notarization
+              if: contains(matrix.target, 'apple-darwin')
               run: |
                 codesign -vvvv -R="notarized" --check-notarization target/${{ matrix.target }}/release/datex
                 spctl -a -vvv -t install target/${{ matrix.target }}/release/datex

@@ -1,0 +1,11 @@
+{
+    endpoint: @example,
+    interfaces: [
+        {
+            type: "websocket-server",
+            config: {
+                port: 80
+            }
+        }
+    ]
+}

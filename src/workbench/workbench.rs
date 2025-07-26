@@ -1,7 +1,3 @@
-use std::cell::RefCell;
-use std::io;
-use std::rc::Rc;
-use std::time::Duration;
 use crate::workbench::views::comhub::ComHub;
 use crate::workbench::views::metadata::Metadata;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
@@ -9,8 +5,12 @@ use datex_core::crypto::random::random_bytes_slice;
 use datex_core::runtime::Runtime;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::{
-    layout::Rect, style::Stylize, text::Line, widgets::Paragraph, DefaultTerminal, Frame,
+    DefaultTerminal, Frame, layout::Rect, style::Stylize, text::Line, widgets::Paragraph,
 };
+use std::cell::RefCell;
+use std::io;
+use std::rc::Rc;
+use std::time::Duration;
 use tokio::task::yield_now;
 
 pub struct Workbench {
@@ -23,8 +23,12 @@ pub struct Workbench {
 impl Workbench {
     pub fn new(runtime: Rc<RefCell<Runtime>>) -> Workbench {
         // init the views
-        let metadata = Metadata { runtime: runtime.clone() };
-        let comhub = ComHub { runtime: runtime.clone() };
+        let metadata = Metadata {
+            runtime: runtime.clone(),
+        };
+        let comhub = ComHub {
+            runtime: runtime.clone(),
+        };
 
         Workbench {
             runtime,

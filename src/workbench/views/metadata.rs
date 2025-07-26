@@ -27,13 +27,13 @@ impl Widget for &Metadata {
         let lines = vec![
             Line::from(vec![
                 "Endpoint: ".into(),
-                runtime.endpoint.to_string().bold(),
+                runtime.endpoint().to_string().bold(),
             ]),
             Line::from(vec!["Version: ".into(), runtime.version.clone().bold()]),
             Line::from(vec![
                 "Allocated pointers: ".into(),
                 runtime
-                    .memory
+                    .memory()
                     .borrow()
                     .get_pointer_ids()
                     .len()

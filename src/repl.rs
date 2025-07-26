@@ -1,7 +1,16 @@
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use datex_core::crypto::crypto_native::CryptoNative;
 use datex_core::decompiler::{DecompileOptions, apply_syntax_highlighting, decompile_value};
-use datex_core::runtime::Runtime;
+use datex_core::run_async;
+use datex_core::runtime::{Runtime, RuntimeConfig};
 use datex_core::runtime::execution_context::{ExecutionContext, ScriptExecutionError};
+use datex_core::runtime::global_context::{set_global_context, GlobalContext};
+use datex_core::utils::time_native::TimeNative;
 use datex_core::values::core_values::endpoint::Endpoint;
+use datex_core::values::serde::deserializer::DatexDeserializer;
+use datex_core::values::serde::error::SerializationError;
+use datex_core::values::serde::serializer::DatexSerializer;
 use rustyline::Helper;
 use rustyline::completion::Completer;
 use rustyline::config::Configurer;
@@ -9,6 +18,7 @@ use rustyline::error::ReadlineError;
 use rustyline::highlight::{CmdKind, Highlighter};
 use rustyline::hint::Hinter;
 use rustyline::validate::{ValidationContext, ValidationResult, Validator};
+use serde::Deserialize;
 
 struct DatexSyntaxHelper;
 
@@ -70,54 +80,91 @@ impl Helper for DatexSyntaxHelper {}
 #[derive(Debug, Clone, Default)]
 pub struct ReplOptions {
     pub verbose: bool,
+    pub config_path: Option<PathBuf>,
 }
 
-pub async fn repl(options: ReplOptions) -> Result<(), ReadlineError> {
-    let runtime = Runtime::new(Endpoint::default());
+pub fn read_config_file(path: PathBuf) -> Result<RuntimeConfig, SerializationError> {
+    let deserializer = DatexDeserializer::from_dx_file(path)?;
+    let config: RuntimeConfig = Deserialize::deserialize(deserializer)?;
+    Ok(config)
+}
 
-    let mut rl = rustyline::Editor::<DatexSyntaxHelper, _>::new()?;
-    rl.set_helper(Some(DatexSyntaxHelper));
-    rl.enable_bracketed_paste(true);
-    rl.set_auto_add_history(true);
+#[derive(Debug)]
+pub enum ReplError {
+    ReadlineError(ReadlineError),
+    SerializationError(SerializationError),
+}
 
-    // create context
-    let mut execution_context = if options.verbose {
-        ExecutionContext::local_debug()
-    } else {
-        ExecutionContext::local()
-    };
-    loop {
-        let readline = rl.readline("> ");
-        match readline {
-            Ok(line) => {
-                // special case: if the user entered "clear", clear the console
-                if line.trim() == "clear" {
-                    rl.clear_screen()?;
-                    continue;
-                }
-
-                let result = runtime.execute(&line, &[], &mut execution_context).await;
-
-                if let Err(e) = result {
-                    match e {
-                        ScriptExecutionError::CompilerError(e) => {
-                            println!("\x1b[31m[Compiler Error] {e}\x1b[0m");
-                        }
-                        ScriptExecutionError::ExecutionError(e) => {
-                            println!("\x1b[31m[Execution Error] {e}\x1b[0m");
-                        }
-                    }
-                    continue;
-                }
-
-                if let Some(result) = result.unwrap() {
-                    let decompiled_value = decompile_value(&result, DecompileOptions::colorized());
-                    println!("< {decompiled_value}");
-                }
-            }
-            Err(_) => break,
-        }
+impl From<ReadlineError> for ReplError {
+    fn from(err: ReadlineError) -> Self {
+        ReplError::ReadlineError(err)
     }
+}
+impl From<SerializationError> for ReplError {
+    fn from(err: SerializationError) -> Self {
+        ReplError::SerializationError(err)
+    }
+}
 
-    Ok(())
+pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
+
+    set_global_context(GlobalContext::new(
+        Arc::new(Mutex::new(CryptoNative)),
+        Arc::new(Mutex::new(TimeNative)),
+    ));
+
+    let config = match options.config_path {
+        Some(path) => read_config_file(path)?,
+        None => RuntimeConfig::new_with_endpoint(Endpoint::random()),
+    };
+
+    run_async! {
+        let runtime = Runtime::create_native(config).await;
+
+        let mut rl = rustyline::Editor::<DatexSyntaxHelper, _>::new()?;
+        rl.set_helper(Some(DatexSyntaxHelper));
+        rl.enable_bracketed_paste(true);
+        rl.set_auto_add_history(true);
+
+        // create context
+        let mut execution_context = if options.verbose {
+            ExecutionContext::local_debug()
+        } else {
+            ExecutionContext::local()
+        };
+        loop {
+            let readline = rl.readline("> ");
+            match readline {
+                Ok(line) => {
+                    // special case: if the user entered "clear", clear the console
+                    if line.trim() == "clear" {
+                        rl.clear_screen()?;
+                        continue;
+                    }
+
+                    let result = runtime.execute(&line, &[], Some(&mut execution_context)).await;
+
+                    if let Err(e) = result {
+                        match e {
+                            ScriptExecutionError::CompilerError(e) => {
+                                println!("\x1b[31m[Compiler Error] {e}\x1b[0m");
+                            }
+                            ScriptExecutionError::ExecutionError(e) => {
+                                println!("\x1b[31m[Execution Error] {e}\x1b[0m");
+                            }
+                        }
+                        continue;
+                    }
+
+                    if let Some(result) = result.unwrap() {
+                        let decompiled_value = decompile_value(&result, DecompileOptions::colorized());
+                        println!("< {decompiled_value}");
+                    }
+                }
+                Err(_) => break,
+            }
+        }
+
+        Ok(())
+    }
 }

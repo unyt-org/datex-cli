@@ -19,7 +19,7 @@ pub struct ComHub {
 impl Widget for &ComHub {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let runtime = self.runtime.borrow();
-        let metadata = runtime.com_hub.get_metadata();
+        let metadata = runtime.com_hub().get_metadata();
 
         let block = Block::default()
             .title(" ComHub ")

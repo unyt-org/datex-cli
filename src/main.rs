@@ -1,7 +1,8 @@
 use datex_core::crypto::crypto_native::CryptoNative;
 use datex_core::runtime::global_context::{set_global_context, DebugFlags, GlobalContext};
-use datex_core::runtime::Runtime;
+use datex_core::runtime::{Runtime, RuntimeConfig};
 use std::cell::RefCell;
+use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use datex_core::values::core_values::endpoint::Endpoint;
@@ -45,10 +46,10 @@ async fn main() {
                 if run.file.is_some() {
                     println!("File: {}", run.file.unwrap())
                 }
-                let runtime = Runtime::new(Endpoint::default());
+                let runtime = Runtime::new(RuntimeConfig::default());
             }
-            Subcommands::Repl(Repl { verbose }) => {
-                let options = ReplOptions { verbose };
+            Subcommands::Repl(Repl { verbose, config }) => {
+                let options = ReplOptions { verbose, config_path: config };
                 repl(options).await.unwrap();
             }
             Subcommands::Workbench(_) => {
@@ -69,14 +70,14 @@ async fn workbench() {
         time: Arc::new(Mutex::new(TimeNative)),
         debug_flags: DebugFlags::default(),
     });
-    let runtime = Rc::new(RefCell::new(Runtime::new(Endpoint::random())));
+    let runtime = Rc::new(RefCell::new(Runtime::new(RuntimeConfig::default())));
     runtime.borrow().start().await;
 
     // add socket server interface
     let socket_interface = WebSocketServerNativeInterface::new(1234).unwrap();
     runtime
         .borrow()
-        .com_hub
+        .com_hub()
         .add_interface(
             Rc::new(RefCell::new(socket_interface)),
             InterfacePriority::Priority(1),

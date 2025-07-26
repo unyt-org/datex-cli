@@ -52,10 +52,10 @@ jobs:
             matrix:
                 include:
                     # Linux
-                    #   - target: x86_64-unknown-linux-gnu
-                    #     os_name: linux-x86_64
-                    #     run_on: ubuntu-latest
-                    #     ext: ''
+                    - target: x86_64-unknown-linux-gnu
+                      os_name: linux-x86_64
+                      run_on: ubuntu-latest
+                      ext: ''
                     # macOS
                     #   - target: x86_64-apple-darwin
                     #     os_name: macos-x86_64

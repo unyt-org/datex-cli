@@ -1,3 +1,4 @@
+use std::path::{Path, PathBuf};
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
@@ -29,6 +30,9 @@ pub struct Repl {
     /// Verbose mode for debugging
     #[arg(short, long)]
     pub verbose: bool,
+    /// optional path to dx config file
+    #[arg(short, long)]
+    pub config: Option<PathBuf>,
 }
 
 #[derive(Args)]

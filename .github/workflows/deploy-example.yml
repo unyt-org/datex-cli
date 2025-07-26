@@ -1,0 +1,16 @@
+name: Deploy example endpoint
+on:
+  workflow_dispatch: {}
+  workflow_run:
+    workflows: ["nightly"]
+    types:
+      - completed
+
+jobs:
+    deploy:
+        runs-on: self-hosted
+        steps:
+        - name: Download executable
+          uses: actions/download-artifact@v4
+          with:
+            name: datex-linux-x86_64

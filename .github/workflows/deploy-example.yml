@@ -2,7 +2,7 @@ name: Deploy example endpoint
 on:
   workflow_dispatch: {}
   workflow_run:
-    workflows: ["nightly"]
+    workflows: ["Nightly Build"]
     types:
       - completed
 

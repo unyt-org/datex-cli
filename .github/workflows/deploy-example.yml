@@ -49,7 +49,6 @@ jobs:
               rm -rf datex.zip
           - name: Run datex process in background
             run: |
-                set -eo pipefail
                 echo "Killing any existing DATEX processes..."
                 pids=$(ps -ef | grep '[d]atex' | awk '{print $2}')
                 if [ -n "$pids" ]; then

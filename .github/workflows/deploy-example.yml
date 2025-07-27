@@ -51,4 +51,4 @@ jobs:
             run: |
               ps -ef | grep '[d]atex' | awk '{print $2}' | xargs -r kill -9
               [ -f ./datex.log ] && rm ./datex.log
-              nohup ./datex-bin/datex repl -v --config example-config.dx > ./datex.log 2>&1 &
+              RUNNER_TRACKING_ID="" && nohup ./datex-bin/datex repl -v --config example-config.dx > ./datex.log 2>&1 &

@@ -1,0 +1,11 @@
+{
+    endpoint: @client,
+    interfaces: [
+        {
+            type: "websocket-client",
+            config: {
+                address: "ws://example.unyt.land"
+            }
+        }
+    ]
+}

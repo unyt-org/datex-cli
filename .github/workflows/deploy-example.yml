@@ -49,6 +49,7 @@ jobs:
               rm -rf datex.zip
           - name: Run datex process in background
             run: |
+              RUNNER_TRACKING_ID=""
               ps -ef | grep '[d]atex' | awk '{print $2}' | xargs -r kill -9
               [ -f ./datex.log ] && rm ./datex.log
-              RUNNER_TRACKING_ID="" && nohup ./datex-bin/datex repl -v --config example-config.dx > ./datex.log 2>&1 &
+              nohup ./datex-bin/datex repl -v --config example-config.dx > ./datex.log 2>&1 &

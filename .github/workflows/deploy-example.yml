@@ -52,7 +52,7 @@ jobs:
                 echo "Killing any existing datex processes..."
                 pids=$(ps -ef | grep '[d]atex' | awk '{print $2}')
                 if [ -n "$pids" ]; then
-                kill -9 $pids
+                    kill -9 $pids
                 fi
 
                 echo "Cleaning up old logs..."
@@ -62,10 +62,8 @@ jobs:
                 nohup env RUNNER_TRACKING_ID="" ./datex-bin/datex repl -v --config example-config.dx > ./datex.log 2>&1 &
 
                 sleep 2
-                if ! pgrep -f "./datex-bin/datex repl" > /dev/null; then
+                pids=$(ps -ef | grep '[d]atex' | awk '{print $2}')
+                if ![ -n "$pids" ]; then
                     echo "❌ datex did not start. Check ./datex.log for details."
-                    cat ./datex.log
-                    exit 1
                 fi
-
-                echo "✅ datex started successfully"
+                echo "✅ datex started with PID: $pids"

@@ -49,6 +49,7 @@ jobs:
               rm -rf datex.zip
           - name: Run datex process in background
             run: |
+                set -eo pipefail
                 echo "Killing any existing DATEX processes..."
                 pids=$(ps -ef | grep '[d]atex' | awk '{print $2}')
                 if [ -n "$pids" ]; then
@@ -59,7 +60,7 @@ jobs:
                 [ -f ./datex.log ] && rm ./datex.log
 
                 echo "Starting DATEX in background..."
-                /home/docker/shared/bg ./datex-bin/datex repl -v --config example-config.dx > ./datex.log 2>&1 &
+                /home/docker/shared/bg.sh ./datex-bin/datex repl -v --config example-config.dx > ./datex.log 2>&1 &
 
                 sleep 2
                 pids=$(ps -ef | grep '[d]atex' | awk '{print $2}')

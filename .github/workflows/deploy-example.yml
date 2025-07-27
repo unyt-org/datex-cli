@@ -49,7 +49,23 @@ jobs:
               rm -rf datex.zip
           - name: Run datex process in background
             run: |
-              RUNNER_TRACKING_ID=""
-              ps -ef | grep '[d]atex' | awk '{print $2}' | xargs -r kill -9
-              [ -f ./datex.log ] && rm ./datex.log
-              RUNNER_TRACKING_ID="" && nohup ./datex-bin/datex repl -v --config example-config.dx > ./datex.log 2>&1 &
+                echo "Killing any existing datex processes..."
+                pids=$(ps -ef | grep '[d]atex' | awk '{print $2}')
+                if [ -n "$pids" ]; then
+                kill -9 $pids
+                fi
+
+                echo "Cleaning up old logs..."
+                [ -f ./datex.log ] && rm ./datex.log
+
+                echo "Starting datex in background..."
+                nohup env RUNNER_TRACKING_ID="" ./datex-bin/datex repl -v --config example-config.dx > ./datex.log 2>&1 &
+
+                sleep 2
+                if ! pgrep -f "./datex-bin/datex repl" > /dev/null; then
+                    echo "❌ datex did not start. Check ./datex.log for details."
+                    cat ./datex.log
+                    exit 1
+                fi
+
+                echo "✅ datex started successfully"

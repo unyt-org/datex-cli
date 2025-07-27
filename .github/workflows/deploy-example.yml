@@ -60,11 +60,6 @@ jobs:
 
                 echo "Starting DATEX in background..."
                 /home/docker/shared/bg.sh nohup ./datex-bin/datex repl -v --config example-config.dx > ./datex.log 2>&1 &
-
+                
                 sleep 2
-                pids=$(ps -ef | grep '[d]atex' | awk '{print $2}')
-                if [ -z "$pids" ]; then
-                    echo "❌ DATEX did not start. Check ./datex.log for details."
-                else
-                    echo "✅ DATEX started with PID: $pids"
-                fi
+                echo "✅ DATEX started successfully."

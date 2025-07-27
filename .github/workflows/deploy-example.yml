@@ -59,7 +59,7 @@ jobs:
                 [ -f ./datex.log ] && rm ./datex.log
 
                 echo "Starting DATEX in background..."
-                /home/docker/shared/bg.sh ./datex-bin/datex repl -v --config example-config.dx > ./datex.log 2>&1 &
+                /home/docker/shared/bg.sh nohup ./datex-bin/datex repl -v --config example-config.dx > ./datex.log 2>&1 &
 
                 sleep 2
                 pids=$(ps -ef | grep '[d]atex' | awk '{print $2}')

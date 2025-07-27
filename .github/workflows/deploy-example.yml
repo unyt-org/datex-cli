@@ -49,4 +49,4 @@ jobs:
               rm -rf datex.zip
           - name: Run datex process in background
             run: |
-              ./datex-bin/datex repl -v --config example-config.json
+              ./datex-bin/datex repl -v --config example-config.dx

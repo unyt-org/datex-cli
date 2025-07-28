@@ -1,8 +1,7 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
-use std::time::Duration;
 use datex_core::crypto::crypto_native::CryptoNative;
 use datex_core::decompiler::{DecompileOptions, apply_syntax_highlighting, decompile_value};
 use datex_core::network::com_interfaces::default_com_interfaces::websocket::websocket_common::WebSocketClientInterfaceSetupData;
@@ -14,7 +13,7 @@ use datex_core::utils::time_native::TimeNative;
 use datex_core::values::core_values::endpoint::Endpoint;
 use datex_core::values::serde::deserializer::DatexDeserializer;
 use datex_core::values::serde::error::SerializationError;
-use datex_core::values::serde::serializer::{to_value_container, DatexSerializer};
+use datex_core::values::serde::serializer::to_value_container;
 use rustyline::Helper;
 use rustyline::completion::Completer;
 use rustyline::config::Configurer;
@@ -23,7 +22,6 @@ use rustyline::highlight::{CmdKind, Highlighter};
 use rustyline::hint::Hinter;
 use rustyline::validate::{ValidationContext, ValidationResult, Validator};
 use serde::Deserialize;
-use tokio::time::sleep;
 
 struct DatexSyntaxHelper;
 
@@ -150,14 +148,14 @@ fn create_new_config_file(base_path: PathBuf, endpoint: Endpoint) -> Result<Path
 
     let mut config_path = base_path.clone();
     config_path.push(".datex");
-    config_path.push(format!("{}.dx", endpoint.to_string()));
+    config_path.push(format!("{}.dx", endpoint));
     let config = to_value_container(&config)?;
     let datex_script = decompile_value(&config, DecompileOptions {formatted: true, ..DecompileOptions::default()});
     fs::write(config_path.clone(), datex_script).map_err(|e| {
         ReplError::SerializationError(SerializationError(e.to_string()))
     })?;
 
-    println!("Created new config file for {} at {:?}", endpoint, config_path);
+    println!("Created new config file for {endpoint} at {config_path:?}");
 
     Ok(config_path)
 }

@@ -41,11 +41,11 @@ impl Widget for &ComHub {
         lines.push(Line::from(vec!["".into()]));
 
         // iterate interfaces
-        for (_, interface) in metadata.interfaces.iter().enumerate() {
+        for interface in metadata.interfaces.iter() {
             lines.push(Line::from(vec![
                 match &interface.properties.name {
                     Some(name) => format!("{} ({})", interface.properties.channel, name),
-                    None => format!("{}", interface.properties.channel),
+                    None => interface.properties.channel.to_string(),
                 }
                 .to_string()
                 .bold(),

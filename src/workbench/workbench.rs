@@ -1,7 +1,6 @@
 use crate::workbench::views::comhub::ComHub;
 use crate::workbench::views::metadata::Metadata;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
-use datex_core::crypto::random::random_bytes_slice;
 use datex_core::runtime::Runtime;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::{
@@ -88,16 +87,13 @@ impl Workbench {
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
-        match event::poll(Duration::from_millis(10)) {
-            Ok(true) => {
-                match event::read()? {
-                    Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                        self.handle_key_event(key_event)
-                    }
-                    _ => {}
-                };
-            }
-            _ => {}
+        if let Ok(true) = event::poll(Duration::from_millis(10)) {
+            match event::read()? {
+                Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                    self.handle_key_event(key_event)
+                }
+                _ => {}
+            };
         }
         Ok(())
     }

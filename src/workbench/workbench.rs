@@ -1,7 +1,6 @@
 use crate::workbench::views::comhub::ComHub;
 use crate::workbench::views::metadata::Metadata;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
-use datex_core::crypto::random::random_bytes_slice;
 use datex_core::runtime::Runtime;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::{
@@ -14,20 +13,20 @@ use std::time::Duration;
 use tokio::task::yield_now;
 
 pub struct Workbench {
-    runtime: Rc<RefCell<Runtime>>,
+    runtime: Runtime,
     metadata: Metadata,
     comhub: ComHub,
     exit: bool,
 }
 
 impl Workbench {
-    pub fn new(runtime: Rc<RefCell<Runtime>>) -> Workbench {
+    pub fn new(runtime: Runtime) -> Workbench {
         // init the views
         let metadata = Metadata {
             runtime: runtime.clone(),
         };
         let comhub = ComHub {
-            runtime: runtime.clone(),
+            runtime: runtime.clone()
         };
 
         Workbench {
@@ -43,9 +42,7 @@ impl Workbench {
         while !self.exit {
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_events()?;
-
-            let runtime = self.runtime.borrow();
-
+            
             // // add ptr to the runtime
             // let id = random_bytes_slice::<26>();
             // runtime
@@ -77,10 +74,9 @@ impl Workbench {
     }
 
     fn draw_title(&self, frame: &mut Frame, area: Rect) {
-        let runtime = self.runtime.borrow();
         let title = Line::from(vec![
             " DATEX Workbench ".bold(),
-            format!("v{} ", runtime.version).dim(),
+            format!("v{} ", self.runtime.version).dim(),
         ])
         .black();
 
@@ -88,16 +84,13 @@ impl Workbench {
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
-        match event::poll(Duration::from_millis(10)) {
-            Ok(true) => {
-                match event::read()? {
-                    Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                        self.handle_key_event(key_event)
-                    }
-                    _ => {}
-                };
-            }
-            _ => {}
+        if let Ok(true) = event::poll(Duration::from_millis(10)) {
+            match event::read()? {
+                Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                    self.handle_key_event(key_event)
+                }
+                _ => {}
+            };
         }
         Ok(())
     }

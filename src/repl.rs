@@ -1,8 +1,8 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
-use std::time::Duration;
 use datex_core::crypto::crypto_native::CryptoNative;
 use datex_core::decompiler::{DecompileOptions, apply_syntax_highlighting, decompile_value};
 use datex_core::network::com_interfaces::default_com_interfaces::websocket::websocket_common::WebSocketClientInterfaceSetupData;
@@ -14,7 +14,7 @@ use datex_core::utils::time_native::TimeNative;
 use datex_core::values::core_values::endpoint::Endpoint;
 use datex_core::values::serde::deserializer::DatexDeserializer;
 use datex_core::values::serde::error::SerializationError;
-use datex_core::values::serde::serializer::{to_value_container, DatexSerializer};
+use datex_core::values::serde::serializer::to_value_container;
 use rustyline::Helper;
 use rustyline::completion::Completer;
 use rustyline::config::Configurer;
@@ -23,7 +23,7 @@ use rustyline::highlight::{CmdKind, Highlighter};
 use rustyline::hint::Hinter;
 use rustyline::validate::{ValidationContext, ValidationResult, Validator};
 use serde::Deserialize;
-use tokio::time::sleep;
+use crate::utils::config::{create_runtime_with_config, get_config};
 
 struct DatexSyntaxHelper;
 
@@ -88,12 +88,6 @@ pub struct ReplOptions {
     pub config_path: Option<PathBuf>,
 }
 
-pub fn read_config_file(path: PathBuf) -> Result<RuntimeConfig, SerializationError> {
-    let deserializer = DatexDeserializer::from_dx_file(path)?;
-    let config: RuntimeConfig = Deserialize::deserialize(deserializer)?;
-    Ok(config)
-}
-
 #[derive(Debug)]
 pub enum ReplError {
     ReadlineError(ReadlineError),
@@ -111,56 +105,6 @@ impl From<SerializationError> for ReplError {
     }
 }
 
-fn get_dx_files(base_path: PathBuf) -> Result<Vec<PathBuf>, ReplError> {
-    let mut config_dir = base_path.clone();
-    config_dir.push(".datex");
-
-    // Create the directory if it doesn't exist
-    if !config_dir.exists() {
-        fs::create_dir_all(&config_dir).map_err(|e| {
-            ReplError::SerializationError(SerializationError(e.to_string()))
-        })?;
-    }
-
-    // Collect all files ending with `.dx`
-    let dx_files = fs::read_dir(&config_dir)
-        .map_err(|e| ReplError::SerializationError(SerializationError(e.to_string())))?
-        .filter_map(|entry| {
-            entry.ok().and_then(|e| {
-                let path = e.path();
-                if path.extension().and_then(|ext| ext.to_str()) == Some("dx") {
-                    Some(path)
-                } else {
-                    None
-                }
-            })
-        })
-        .collect();
-
-    Ok(dx_files)
-}
-
-fn create_new_config_file(base_path: PathBuf, endpoint: Endpoint) -> Result<PathBuf, ReplError> {
-    let mut config = RuntimeConfig::new_with_endpoint(endpoint.clone());
-
-    // add default interface
-    config.add_interface("websocket-client".to_string(), WebSocketClientInterfaceSetupData {
-        address: "wss://example.unyt.land".to_string(),
-    })?;
-
-    let mut config_path = base_path.clone();
-    config_path.push(".datex");
-    config_path.push(format!("{}.dx", endpoint.to_string()));
-    let config = to_value_container(&config)?;
-    let datex_script = decompile_value(&config, DecompileOptions {formatted: true, ..DecompileOptions::default()});
-    fs::write(config_path.clone(), datex_script).map_err(|e| {
-        ReplError::SerializationError(SerializationError(e.to_string()))
-    })?;
-
-    println!("Created new config file for {} at {:?}", endpoint, config_path);
-
-    Ok(config_path)
-}
 
 pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
 
@@ -169,40 +113,14 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
         Arc::new(Mutex::new(TimeNative)),
     ));
 
-    let config = match options.config_path {
-        Some(path) => read_config_file(path)?,
-        None => {
-            match home::home_dir() {
-                Some(path) if !path.as_os_str().is_empty() => {
-                    // get all .dx files in the home directory .datex folder
-                    let dx_files = get_dx_files(path.clone())?;
-                    // if no files yet, create a new config file for a random endpoint
-                    if dx_files.is_empty() {
-                        let endpoint = Endpoint::random();
-                        let config_path = create_new_config_file(path.clone(), endpoint)?;
-                        read_config_file(config_path)?
-                    }
-                    else {
-                        // if there are files, read the first one
-                        let config_path = dx_files.first().unwrap().clone();
-                        read_config_file(config_path)?
-                    }
-                },
-                _ => {
-                    eprintln!("Unable to get home directory, using temporary endpoint.");
-                    RuntimeConfig::new_with_endpoint(Endpoint::random())
-                }
-            }
-        },
-    };
 
     let (cmd_sender, mut cmd_receiver) = tokio::sync::mpsc::channel::<ReplCommand>(100);
     let (response_sender, response_receiver) = tokio::sync::mpsc::channel::<ReplResponse>(100);
-    repl_loop(cmd_sender, response_receiver)?;
 
     run_async! {
-        let runtime = Runtime::create_native(config).await;
+        let runtime = create_runtime_with_config(options.config_path, options.verbose).await?;
 
+        repl_loop(cmd_sender, response_receiver)?;
 
         // create context
         let mut execution_context = if options.verbose {
@@ -213,9 +131,22 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
 
         while let Some(command) = cmd_receiver.recv().await {
             match command {
-                ReplCommand::Debug => {
+                ReplCommand::ComHubInfo => {
                     let metadata = runtime.com_hub().get_metadata().to_string();
                     response_sender.send(ReplResponse::Result(Some(metadata))).await.unwrap();
+                }
+                ReplCommand::Trace(endpoint) => {
+                    let trace = runtime.com_hub().record_trace(endpoint).await;
+                    match trace {
+                        Some(trace) => {
+                            let trace_string = trace.to_string();
+                            response_sender.send(ReplResponse::Result(Some(trace_string)))
+                                .await.unwrap();
+                        }
+                        None => {
+                            response_sender.send(ReplResponse::Result(Some("Could not create trace".to_string()))).await.unwrap();
+                        }
+                    }
                 }
                 ReplCommand::Execute(line) => {
                     let result = runtime.execute(&line, &[], Some(&mut execution_context)).await;
@@ -252,7 +183,8 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
 
 
 enum ReplCommand {
-    Debug,
+    ComHubInfo,
+    Trace(Endpoint),
     Execute(String),
 }
 
@@ -280,11 +212,22 @@ fn repl_loop(
                             rl.clear_screen().unwrap();
                             continue;
                         },
-                        "debug" => {
-                            sender.blocking_send(ReplCommand::Debug).unwrap();
+                        "comhub" => {
+                            sender.blocking_send(ReplCommand::ComHubInfo).unwrap();
                         },
                         _ => {
-                            sender.blocking_send(ReplCommand::Execute(line.clone())).unwrap();
+                            // if starting with "trace", send trace command
+                            if line.starts_with("trace ") {
+                                let endpoint = Endpoint::from_str(&line[6..]);
+                                if endpoint.is_err() {
+                                    println!("Invalid endpoint format. Use 'trace <endpoint>'.");
+                                    continue;
+                                }
+                                sender.blocking_send(ReplCommand::Trace(endpoint.unwrap())).unwrap();
+                            }
+                            else {
+                                sender.blocking_send(ReplCommand::Execute(line.clone())).unwrap();
+                            }
                         }
                     }
                 }

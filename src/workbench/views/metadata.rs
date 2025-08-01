@@ -8,11 +8,9 @@ use ratatui::{
     text::{Line, Text},
     widgets::{Block, Paragraph, Widget},
 };
-use std::cell::RefCell;
-use std::rc::Rc;
 
 pub struct Metadata {
-    pub runtime: Rc<RefCell<Runtime>>,
+    pub runtime: Runtime,
 }
 
 impl Widget for &Metadata {
@@ -22,17 +20,16 @@ impl Widget for &Metadata {
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::White));
 
-        let runtime = self.runtime.borrow();
 
         let lines = vec![
             Line::from(vec![
                 "Endpoint: ".into(),
-                runtime.endpoint().to_string().bold(),
+                self.runtime.endpoint().to_string().bold(),
             ]),
-            Line::from(vec!["Version: ".into(), runtime.version.clone().bold()]),
+            Line::from(vec!["Version: ".into(), self.runtime.version.clone().bold()]),
             Line::from(vec![
                 "Allocated pointers: ".into(),
-                runtime
+                self.runtime
                     .memory()
                     .borrow()
                     .get_pointer_ids()

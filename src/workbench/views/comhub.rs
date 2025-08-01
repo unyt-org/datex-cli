@@ -9,9 +9,6 @@ use ratatui::{
     text::{Line, Text},
     widgets::{Block, Paragraph, Widget},
 };
-use std::cell::RefCell;
-use std::rc::Rc;
-
 pub struct ComHub {
     pub runtime: Runtime,
 }

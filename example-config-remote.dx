@@ -4,7 +4,7 @@
         {
             type: "websocket-client",
             config: {
-                address: "ws://example.unyt.land:80"
+                address: "wss://example.unyt.land"
             }
         }
     ]

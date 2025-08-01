@@ -2,23 +2,28 @@ use datex_core::crypto::crypto_native::CryptoNative;
 use datex_core::runtime::global_context::{set_global_context, DebugFlags, GlobalContext};
 use datex_core::runtime::{Runtime, RuntimeConfig};
 use std::cell::RefCell;
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use datex_core::network::com_hub::InterfacePriority;
 use datex_core::network::com_interfaces::default_com_interfaces::websocket::websocket_server_native_interface::WebSocketServerNativeInterface;
+use datex_core::run_async;
 use datex_core::utils::time_native::TimeNative;
+use datex_core::values::serde::error::SerializationError;
 use tokio::task::LocalSet;
 
 mod command_line_args;
 mod lsp;
 mod repl;
 mod workbench;
+mod utils;
 
 use crate::command_line_args::Repl;
 use crate::lsp::Backend;
 use crate::repl::{ReplOptions, repl};
 use command_line_args::{Subcommands, get_command};
 use tower_lsp::{LspService, Server};
+use crate::utils::config::create_runtime_with_config;
 
 #[tokio::main]
 async fn main() {
@@ -45,8 +50,7 @@ async fn main() {
                 repl(options).await.unwrap();
             }
             Subcommands::Workbench(_) => {
-                let local = LocalSet::new();
-                local.run_until(workbench()).await;
+                workbench(None).await.expect("Workbench failed");
             }
         }
     }
@@ -56,25 +60,17 @@ async fn main() {
     }
 }
 
-async fn workbench() {
+async fn workbench(config_path: Option<PathBuf>) -> Result<(), SerializationError> {
     set_global_context(GlobalContext {
         crypto: Arc::new(Mutex::new(CryptoNative)),
         time: Arc::new(Mutex::new(TimeNative)),
         debug_flags: DebugFlags::default(),
     });
-    let runtime = Rc::new(RefCell::new(Runtime::new(RuntimeConfig::default())));
-    runtime.borrow().start().await;
-
-    // add socket server interface
-    let socket_interface = WebSocketServerNativeInterface::new(1234).unwrap();
-    runtime
-        .borrow()
-        .com_hub()
-        .add_interface(
-            Rc::new(RefCell::new(socket_interface)),
-            InterfacePriority::Priority(1),
-        )
-        .unwrap();
-
-    workbench::start_workbench(runtime).await.unwrap();
+    
+    run_async! {
+        let runtime = create_runtime_with_config(config_path).await?;
+        workbench::start_workbench(runtime).await?;
+        
+        Ok(())
+    }
 }

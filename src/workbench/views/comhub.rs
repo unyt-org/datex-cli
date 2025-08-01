@@ -13,13 +13,12 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 pub struct ComHub {
-    pub runtime: Rc<RefCell<Runtime>>,
+    pub runtime: Runtime,
 }
 
 impl Widget for &ComHub {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let runtime = self.runtime.borrow();
-        let metadata = runtime.com_hub().get_metadata();
+        let metadata = self.runtime.com_hub().get_metadata();
 
         let block = Block::default()
             .title(" ComHub ")
@@ -54,7 +53,7 @@ impl Widget for &ComHub {
             // iterate sockets
             for socket in interface.sockets.iter() {
                 lines.push(Line::from(vec![
-                    "  ⬤".to_string().green(),
+                    "  ⬤ ".to_string().green(),
                     match socket.direction {
                         InterfaceDirection::In => " ──▶ ".to_string().into(),
                         InterfaceDirection::Out => " ◀── ".to_string().into(),

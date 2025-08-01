@@ -23,6 +23,7 @@ use rustyline::highlight::{CmdKind, Highlighter};
 use rustyline::hint::Hinter;
 use rustyline::validate::{ValidationContext, ValidationResult, Validator};
 use serde::Deserialize;
+use crate::utils::config::{create_runtime_with_config, get_config};
 
 struct DatexSyntaxHelper;
 
@@ -87,12 +88,6 @@ pub struct ReplOptions {
     pub config_path: Option<PathBuf>,
 }
 
-pub fn read_config_file(path: PathBuf) -> Result<RuntimeConfig, SerializationError> {
-    let deserializer = DatexDeserializer::from_dx_file(path)?;
-    let config: RuntimeConfig = Deserialize::deserialize(deserializer)?;
-    Ok(config)
-}
-
 #[derive(Debug)]
 pub enum ReplError {
     ReadlineError(ReadlineError),
@@ -110,56 +105,6 @@ impl From<SerializationError> for ReplError {
     }
 }
 
-fn get_dx_files(base_path: PathBuf) -> Result<Vec<PathBuf>, ReplError> {
-    let mut config_dir = base_path.clone();
-    config_dir.push(".datex");
-
-    // Create the directory if it doesn't exist
-    if !config_dir.exists() {
-        fs::create_dir_all(&config_dir).map_err(|e| {
-            ReplError::SerializationError(SerializationError(e.to_string()))
-        })?;
-    }
-
-    // Collect all files ending with `.dx`
-    let dx_files = fs::read_dir(&config_dir)
-        .map_err(|e| ReplError::SerializationError(SerializationError(e.to_string())))?
-        .filter_map(|entry| {
-            entry.ok().and_then(|e| {
-                let path = e.path();
-                if path.extension().and_then(|ext| ext.to_str()) == Some("dx") {
-                    Some(path)
-                } else {
-                    None
-                }
-            })
-        })
-        .collect();
-
-    Ok(dx_files)
-}
-
-fn create_new_config_file(base_path: PathBuf, endpoint: Endpoint) -> Result<PathBuf, ReplError> {
-    let mut config = RuntimeConfig::new_with_endpoint(endpoint.clone());
-
-    // add default interface
-    config.add_interface("websocket-client".to_string(), WebSocketClientInterfaceSetupData {
-        address: "wss://example.unyt.land".to_string(),
-    })?;
-
-    let mut config_path = base_path.clone();
-    config_path.push(".datex");
-    config_path.push(format!("{}.dx", endpoint));
-    let config = to_value_container(&config)?;
-    let datex_script = decompile_value(&config, DecompileOptions {formatted: true, ..DecompileOptions::default()});
-    fs::write(config_path.clone(), datex_script).map_err(|e| {
-        ReplError::SerializationError(SerializationError(e.to_string()))
-    })?;
-
-    println!("Created new config file for {endpoint} at {config_path:?}");
-
-    Ok(config_path)
-}
 
 pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
 
@@ -168,40 +113,13 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
         Arc::new(Mutex::new(TimeNative)),
     ));
 
-    let config = match options.config_path {
-        Some(path) => read_config_file(path)?,
-        None => {
-            match home::home_dir() {
-                Some(path) if !path.as_os_str().is_empty() => {
-                    // get all .dx files in the home directory .datex folder
-                    let dx_files = get_dx_files(path.clone())?;
-                    // if no files yet, create a new config file for a random endpoint
-                    if dx_files.is_empty() {
-                        let endpoint = Endpoint::random();
-                        let config_path = create_new_config_file(path.clone(), endpoint)?;
-                        read_config_file(config_path)?
-                    }
-                    else {
-                        // if there are files, read the first one
-                        let config_path = dx_files.first().unwrap().clone();
-                        read_config_file(config_path)?
-                    }
-                },
-                _ => {
-                    eprintln!("Unable to get home directory, using temporary endpoint.");
-                    RuntimeConfig::new_with_endpoint(Endpoint::random())
-                }
-            }
-        },
-    };
 
     let (cmd_sender, mut cmd_receiver) = tokio::sync::mpsc::channel::<ReplCommand>(100);
     let (response_sender, response_receiver) = tokio::sync::mpsc::channel::<ReplResponse>(100);
     repl_loop(cmd_sender, response_receiver)?;
 
     run_async! {
-        let runtime = Runtime::create_native(config).await;
-
+        let runtime = create_runtime_with_config(options.config_path).await?;
 
         // create context
         let mut execution_context = if options.verbose {

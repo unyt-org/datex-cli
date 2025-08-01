@@ -60,7 +60,10 @@ impl Widget for &ComHub {
                         InterfaceDirection::Out => " ◀── ".to_string().into(),
                         InterfaceDirection::InOut => " ◀──▶ ".to_string().into(),
                     },
-                    format!("{}", socket.endpoint).into(),
+                    (match &socket.endpoint {
+                        Some(endpoint) => endpoint.to_string(),
+                        None => "unknown".to_string(),
+                    }).to_string().into(),
                 ]));
             }
         }

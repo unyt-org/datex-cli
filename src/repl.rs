@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
 use datex_core::crypto::crypto_native::CryptoNative;
@@ -211,9 +212,22 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
 
         while let Some(command) = cmd_receiver.recv().await {
             match command {
-                ReplCommand::Debug => {
+                ReplCommand::ComHubInfo => {
                     let metadata = runtime.com_hub().get_metadata().to_string();
                     response_sender.send(ReplResponse::Result(Some(metadata))).await.unwrap();
+                }
+                ReplCommand::Trace(endpoint) => {
+                    let trace = runtime.com_hub().record_trace(endpoint).await;
+                    match trace {
+                        Some(trace) => {
+                            let trace_string = trace.to_string();
+                            response_sender.send(ReplResponse::Result(Some(trace_string)))
+                                .await.unwrap();
+                        }
+                        None => {
+                            response_sender.send(ReplResponse::Result(Some("Could not create trace".to_string()))).await.unwrap();
+                        }
+                    }
                 }
                 ReplCommand::Execute(line) => {
                     let result = runtime.execute(&line, &[], Some(&mut execution_context)).await;
@@ -250,7 +264,8 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
 
 
 enum ReplCommand {
-    Debug,
+    ComHubInfo,
+    Trace(Endpoint),
     Execute(String),
 }
 
@@ -278,11 +293,22 @@ fn repl_loop(
                             rl.clear_screen().unwrap();
                             continue;
                         },
-                        "debug" => {
-                            sender.blocking_send(ReplCommand::Debug).unwrap();
+                        "comhub" => {
+                            sender.blocking_send(ReplCommand::ComHubInfo).unwrap();
                         },
                         _ => {
-                            sender.blocking_send(ReplCommand::Execute(line.clone())).unwrap();
+                            // if starting with "trace", send trace command
+                            if line.starts_with("trace ") {
+                                let endpoint = Endpoint::from_str(&line[6..]);
+                                if endpoint.is_err() {
+                                    println!("Invalid endpoint format. Use 'trace <endpoint>'.");
+                                    continue;
+                                }
+                                sender.blocking_send(ReplCommand::Trace(endpoint.unwrap())).unwrap();
+                            }
+                            else {
+                                sender.blocking_send(ReplCommand::Execute(line.clone())).unwrap();
+                            }
                         }
                     }
                 }

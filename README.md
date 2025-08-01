@@ -40,7 +40,7 @@ Alternatively, you can also use the `repl` subcommand:
 datex repl
 ```
 
-To show debug information, run the `repl` subcommand with the `--verbose` or `-v` flag:
+To show debug logs, run the `repl` subcommand with the `--verbose` or `-v` flag:
 ```shell
 datex repl -v
 ```

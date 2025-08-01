@@ -50,7 +50,7 @@ async fn main() {
                 repl(options).await.unwrap();
             }
             Subcommands::Workbench(_) => {
-                workbench(None).await.expect("Workbench failed");
+                workbench(None, false).await.expect("Workbench failed");
             }
         }
     }
@@ -60,17 +60,17 @@ async fn main() {
     }
 }
 
-async fn workbench(config_path: Option<PathBuf>) -> Result<(), SerializationError> {
+async fn workbench(config_path: Option<PathBuf>, debug: bool) -> Result<(), SerializationError> {
     set_global_context(GlobalContext {
         crypto: Arc::new(Mutex::new(CryptoNative)),
         time: Arc::new(Mutex::new(TimeNative)),
         debug_flags: DebugFlags::default(),
     });
-    
+
     run_async! {
-        let runtime = create_runtime_with_config(config_path).await?;
+        let runtime = create_runtime_with_config(config_path, debug).await?;
         workbench::start_workbench(runtime).await?;
-        
+
         Ok(())
     }
 }

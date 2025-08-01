@@ -116,10 +116,11 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
 
     let (cmd_sender, mut cmd_receiver) = tokio::sync::mpsc::channel::<ReplCommand>(100);
     let (response_sender, response_receiver) = tokio::sync::mpsc::channel::<ReplResponse>(100);
-    repl_loop(cmd_sender, response_receiver)?;
 
     run_async! {
-        let runtime = create_runtime_with_config(options.config_path).await?;
+        let runtime = create_runtime_with_config(options.config_path, options.verbose).await?;
+
+        repl_loop(cmd_sender, response_receiver)?;
 
         // create context
         let mut execution_context = if options.verbose {

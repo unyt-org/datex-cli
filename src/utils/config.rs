@@ -95,7 +95,22 @@ pub fn get_config(custom_config_path: Option<PathBuf>) -> Result<RuntimeConfig, 
     })
 }
 
-pub async fn create_runtime_with_config(custom_config_path: Option<PathBuf>) -> Result<Runtime, SerializationError> {
-    let config = get_config(custom_config_path)?;
-    Ok(Runtime::create_native(config).await)
+pub async fn create_runtime_with_config(custom_config_path: Option<PathBuf>, force_debug: bool) -> Result<Runtime, SerializationError> {
+    let mut config = get_config(custom_config_path)?;
+    // overwrite debug mode if force_debug is true
+    if force_debug {
+        config.debug = Some(true);
+    }
+    let runtime = Runtime::create_native(config).await;
+
+    let cli_version = env!("CARGO_PKG_VERSION");
+
+    println!("================================================");
+    println!("DATEX REPL v{cli_version}");
+    println!("DATEX Core version: {}", runtime.version);
+    println!("Endpoint: {}", runtime.endpoint());
+    println!("\nexit using [CTRL + C]");
+    println!("================================================\n");
+
+    Ok(runtime)
 }

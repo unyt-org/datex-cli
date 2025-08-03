@@ -124,7 +124,7 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
 
         // create context
         let mut execution_context = if options.verbose {
-            ExecutionContext::local_debug()
+            ExecutionContext::local_debug(false)
         } else {
             ExecutionContext::local()
         };

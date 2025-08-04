@@ -11,10 +11,8 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.0.23", features = ["derive"] }
-lazy_static = "1.4.0"
-datex-core = { git = "https://github.com/unyt-org/datex-core.git", branch = "feat/ref", features = ["default", "debug"], version = "0.0.5" }
+datex-core = { version = "0.0.5", features = ["default", "debug"] }
 
-serde_json = "1.0.78"
 tokio = { version = "1.17.0", features = ["full"] }
 tower-lsp = { version = "0.20.0", features = ["proposed"]}
 serde = { version = "1.0", features = ["derive"] }

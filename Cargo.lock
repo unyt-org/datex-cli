@@ -840,6 +840,8 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 [[package]]
 name = "datex-core"
 version = "0.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f727d7e04e8fcfba1975d4c8e0edb502f179f9a84ca19fcd5b61a4f2b4351b7"
 dependencies = [
  "ariadne",
  "async-stream",
@@ -906,11 +908,9 @@ dependencies = [
  "crossterm",
  "datex-core",
  "home",
- "lazy_static",
  "ratatui",
  "rustyline",
  "serde",
- "serde_json",
  "tokio",
  "tower-lsp",
 ]
@@ -918,6 +918,8 @@ dependencies = [
 [[package]]
 name = "datex_macros"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2759ed65a2dd4044a4caea0026a110a61de01ecd489e48950e9d15a94dab4a8a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4624,3 +4626,7 @@ dependencies = [
  "quote",
  "syn 2.0.104",
 ]
+
+[[patch.unused]]
+name = "datex-core"
+version = "0.0.5"

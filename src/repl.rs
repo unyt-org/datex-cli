@@ -1,20 +1,15 @@
-use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
 use datex_core::crypto::crypto_native::CryptoNative;
 use datex_core::decompiler::{DecompileOptions, apply_syntax_highlighting, decompile_value};
-use datex_core::network::com_interfaces::default_com_interfaces::websocket::websocket_common::WebSocketClientInterfaceSetupData;
 use datex_core::run_async;
-use datex_core::runtime::{Runtime, RuntimeConfig};
 use datex_core::runtime::execution_context::{ExecutionContext, ScriptExecutionError};
 use datex_core::runtime::global_context::{set_global_context, GlobalContext};
 use datex_core::utils::time_native::TimeNative;
 use datex_core::values::core_values::endpoint::Endpoint;
-use datex_core::values::serde::deserializer::DatexDeserializer;
 use datex_core::values::serde::error::SerializationError;
-use datex_core::values::serde::serializer::to_value_container;
 use rustyline::Helper;
 use rustyline::completion::Completer;
 use rustyline::config::Configurer;
@@ -22,8 +17,7 @@ use rustyline::error::ReadlineError;
 use rustyline::highlight::{CmdKind, Highlighter};
 use rustyline::hint::Hinter;
 use rustyline::validate::{ValidationContext, ValidationResult, Validator};
-use serde::Deserialize;
-use crate::utils::config::{create_runtime_with_config, get_config};
+use crate::utils::config::create_runtime_with_config;
 
 struct DatexSyntaxHelper;
 

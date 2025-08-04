@@ -6,9 +6,7 @@ use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::{
     DefaultTerminal, Frame, layout::Rect, style::Stylize, text::Line, widgets::Paragraph,
 };
-use std::cell::RefCell;
 use std::io;
-use std::rc::Rc;
 use std::time::Duration;
 use tokio::task::yield_now;
 

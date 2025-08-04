@@ -54,7 +54,7 @@ pub fn create_new_config_file(base_path: PathBuf, endpoint: Endpoint) -> Result<
 
     let mut config_path = base_path.clone();
     config_path.push(".datex");
-    config_path.push(format!("{}.dx", endpoint));
+    config_path.push(format!("{endpoint}.dx"));
     let config = to_value_container(&config)?;
     let datex_script = decompile_value(&config, DecompileOptions {formatted: true, ..DecompileOptions::default()});
     fs::write(config_path.clone(), datex_script).map_err(|e| {

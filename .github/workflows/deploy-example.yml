@@ -43,13 +43,23 @@ jobs:
               ref: ${{ needs.get-ref.outputs.ref }}
           - name: Download executable with curl
             run: |
-              curl -L https://github.com/unyt-org/datex-cli/releases/download/nightly/datex-x86_64-unknown-linux-gnu.zip
-              unzip datex-x86_64-unknown-linux-gnu.zip -d /usr/local/bin
-              chmod +x /usr/local/bin/datex
-          - name: Copy config file
-            run: |
-              mkdir -p /etc/datex
-              cp example-config.json /etc/datex/example.json
+              curl -L -o datex.zip https://github.com/unyt-org/datex-cli/releases/download/nightly/datex-x86_64-unknown-linux-gnu.zip
+              unzip datex.zip -d datex-bin
+              chmod +x ./datex-bin/datex
+              rm -rf datex.zip
           - name: Run datex process in background
             run: |
-              nohup datex repl -v --config /etc/datex/example.json > /var/log/datex.log 2>&1 &
+                echo "Killing any existing DATEX processes..."
+                pids=$(ps -ef | grep '[d]atex' | awk '{print $2}')
+                if [ -n "$pids" ]; then
+                    kill -9 $pids
+                fi
+
+                echo "Cleaning up old logs..."
+                [ -f ./datex.log ] && rm ./datex.log
+
+                echo "Starting DATEX in background..."
+                /home/docker/shared/bg.sh ./datex-bin/datex repl -v --config example-config.dx
+                
+                sleep 2
+                echo "✅ DATEX started successfully."

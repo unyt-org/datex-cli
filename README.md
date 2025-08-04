@@ -40,9 +40,14 @@ Alternatively, you can also use the `repl` subcommand:
 datex repl
 ```
 
-To show debug information, run the `repl` subcommand with the `--verbose` or `-v` flag:
+To show debug logs, run the `repl` subcommand with the `--verbose` or `-v` flag:
 ```shell
 datex repl -v
+```
+
+To start the repl with a specific DATEX configuration file, use the `--config` or `-c` flag:
+```shell
+datex repl --config path/to/config.dx
 ```
 
 ### Running a DATEX file

@@ -9,17 +9,13 @@ use ratatui::{
     text::{Line, Text},
     widgets::{Block, Paragraph, Widget},
 };
-use std::cell::RefCell;
-use std::rc::Rc;
-
 pub struct ComHub {
-    pub runtime: Rc<RefCell<Runtime>>,
+    pub runtime: Runtime,
 }
 
 impl Widget for &ComHub {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let runtime = self.runtime.borrow();
-        let metadata = runtime.com_hub().get_metadata();
+        let metadata = self.runtime.com_hub().get_metadata();
 
         let block = Block::default()
             .title(" ComHub ")
@@ -41,11 +37,11 @@ impl Widget for &ComHub {
         lines.push(Line::from(vec!["".into()]));
 
         // iterate interfaces
-        for (_, interface) in metadata.interfaces.iter().enumerate() {
+        for interface in metadata.interfaces.iter() {
             lines.push(Line::from(vec![
                 match &interface.properties.name {
                     Some(name) => format!("{} ({})", interface.properties.channel, name),
-                    None => format!("{}", interface.properties.channel),
+                    None => interface.properties.channel.to_string(),
                 }
                 .to_string()
                 .bold(),
@@ -54,13 +50,16 @@ impl Widget for &ComHub {
             // iterate sockets
             for socket in interface.sockets.iter() {
                 lines.push(Line::from(vec![
-                    "  ⬤".to_string().green(),
+                    "  ⬤ ".to_string().green(),
                     match socket.direction {
                         InterfaceDirection::In => " ──▶ ".to_string().into(),
                         InterfaceDirection::Out => " ◀── ".to_string().into(),
                         InterfaceDirection::InOut => " ◀──▶ ".to_string().into(),
                     },
-                    format!("{}", socket.endpoint).into(),
+                    (match &socket.endpoint {
+                        Some(endpoint) => endpoint.to_string(),
+                        None => "unknown".to_string(),
+                    }).to_string().into(),
                 ]));
             }
         }

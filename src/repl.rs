@@ -1,12 +1,9 @@
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::sync::{Arc, Mutex};
-use std::thread::spawn;
+use crate::utils::config::create_runtime_with_config;
 use datex_core::crypto::crypto_native::CryptoNative;
 use datex_core::decompiler::{DecompileOptions, apply_syntax_highlighting, decompile_value};
 use datex_core::run_async;
 use datex_core::runtime::execution_context::{ExecutionContext, ScriptExecutionError};
-use datex_core::runtime::global_context::{set_global_context, GlobalContext};
+use datex_core::runtime::global_context::{GlobalContext, set_global_context};
 use datex_core::utils::time_native::TimeNative;
 use datex_core::values::core_values::endpoint::Endpoint;
 use datex_core::values::serde::error::SerializationError;
@@ -17,7 +14,10 @@ use rustyline::error::ReadlineError;
 use rustyline::highlight::{CmdKind, Highlighter};
 use rustyline::hint::Hinter;
 use rustyline::validate::{ValidationContext, ValidationResult, Validator};
-use crate::utils::config::create_runtime_with_config;
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::sync::{Arc, Mutex};
+use std::thread::spawn;
 
 struct DatexSyntaxHelper;
 
@@ -99,14 +99,11 @@ impl From<SerializationError> for ReplError {
     }
 }
 
-
 pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
-
     set_global_context(GlobalContext::new(
         Arc::new(Mutex::new(CryptoNative)),
         Arc::new(Mutex::new(TimeNative)),
     ));
-
 
     let (cmd_sender, mut cmd_receiver) = tokio::sync::mpsc::channel::<ReplCommand>(100);
     let (response_sender, response_receiver) = tokio::sync::mpsc::channel::<ReplResponse>(100);
@@ -175,7 +172,6 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
     }
 }
 
-
 enum ReplCommand {
     ComHubInfo,
     Trace(Endpoint),
@@ -190,7 +186,6 @@ fn repl_loop(
     sender: tokio::sync::mpsc::Sender<ReplCommand>,
     mut receiver: tokio::sync::mpsc::Receiver<ReplResponse>,
 ) -> Result<(), ReplError> {
-
     let mut rl = rustyline::Editor::<DatexSyntaxHelper, _>::new()?;
     rl.set_helper(Some(DatexSyntaxHelper));
     rl.enable_bracketed_paste(true);
@@ -205,10 +200,10 @@ fn repl_loop(
                         "clear" => {
                             rl.clear_screen().unwrap();
                             continue;
-                        },
+                        }
                         "comhub" => {
                             sender.blocking_send(ReplCommand::ComHubInfo).unwrap();
-                        },
+                        }
                         _ => {
                             // if starting with "trace", send trace command
                             if line.starts_with("trace ") {
@@ -217,10 +212,13 @@ fn repl_loop(
                                     println!("Invalid endpoint format. Use 'trace <endpoint>'.");
                                     continue;
                                 }
-                                sender.blocking_send(ReplCommand::Trace(endpoint.unwrap())).unwrap();
-                            }
-                            else {
-                                sender.blocking_send(ReplCommand::Execute(line.clone())).unwrap();
+                                sender
+                                    .blocking_send(ReplCommand::Trace(endpoint.unwrap()))
+                                    .unwrap();
+                            } else {
+                                sender
+                                    .blocking_send(ReplCommand::Execute(line.clone()))
+                                    .unwrap();
                             }
                         }
                     }
@@ -235,7 +233,9 @@ fn repl_loop(
                         println!("{result}");
                     }
                 }
-                None => { break; }
+                None => {
+                    break;
+                }
             }
         }
     });

@@ -160,6 +160,14 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
 
                     else if let Some(result) = result.unwrap() {
                         let decompiled_value = decompile_value(&result, DecompileOptions::colorized());
+                        // indent all lines except the first with 2 spaces to match the REPL prompt indentation
+                        let decompiled_value = decompiled_value.lines().enumerate().map(|(i, line)| {
+                            if i == 0 {
+                                line.to_string()
+                            } else {
+                                format!("  {line}")
+                            }
+                        }).collect::<Vec<String>>().join("\n");
                         result_string = Some(format!("< {decompiled_value}"));
                     }
                     else {

@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
-use datex_core::decompiler::{decompile_value, DecompileOptions};
+use datex_core::decompiler::{decompile_value, DecompileOptions, Formatting};
 use datex_core::network::com_interfaces::default_com_interfaces::websocket::websocket_common::WebSocketClientInterfaceSetupData;
 use datex_core::runtime::{Runtime, RuntimeConfig};
 use datex_core::values::core_values::endpoint::Endpoint;
@@ -56,7 +56,7 @@ pub fn create_new_config_file(base_path: PathBuf, endpoint: Endpoint) -> Result<
     config_path.push(".datex");
     config_path.push(format!("{endpoint}.dx"));
     let config = to_value_container(&config)?;
-    let datex_script = decompile_value(&config, DecompileOptions {formatted: true, ..DecompileOptions::default()});
+    let datex_script = decompile_value(&config, DecompileOptions {formatting: Formatting::multiline(), ..DecompileOptions::default()});
     fs::write(config_path.clone(), datex_script).map_err(|e| {
         SerializationError(e.to_string())
     })?;

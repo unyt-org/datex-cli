@@ -27,16 +27,16 @@ impl Widget for &Metadata {
                 self.runtime.endpoint().to_string().bold(),
             ]),
             Line::from(vec!["Version: ".into(), self.runtime.version.clone().bold()]),
-            Line::from(vec![
-                "Allocated pointers: ".into(),
-                self.runtime
-                    .memory()
-                    .borrow()
-                    .get_pointer_ids()
-                    .len()
-                    .to_string()
-                    .bold(),
-            ]),
+            // Line::from(vec![
+            //     "Allocated pointers: ".into(),
+            //     self.runtime
+            //         .memory()
+            //         .borrow()
+            //         .get_pointer_ids()
+            //         .len()
+            //         .to_string()
+            //         .bold(),
+            // ]),
         ];
 
         Paragraph::new(Text::from_iter(lines))

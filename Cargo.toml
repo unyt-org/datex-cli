@@ -11,7 +11,7 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.0.23", features = ["derive"] }
-datex-core = { version = "0.0.5", features = ["default", "debug"] }
+datex-core = { path = "../datex-core", version = "0.0.5", features = ["default", "debug"] }
 
 tokio = { version = "1.17.0", features = ["full"] }
 tower-lsp = { version = "0.20.0", features = ["proposed"]}

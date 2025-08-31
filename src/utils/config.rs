@@ -21,9 +21,7 @@ fn get_dx_files(base_path: PathBuf) -> Result<Vec<PathBuf>, SerializationError> 
 
     // Create the directory if it doesn't exist
     if !config_dir.exists() {
-        fs::create_dir_all(&config_dir).map_err(|e| {
-            SerializationError(e.to_string())
-        })?;
+        fs::create_dir_all(&config_dir).map_err(|e| SerializationError(e.to_string()))?;
     }
 
     // Collect all files ending with `.dx`
@@ -44,29 +42,41 @@ fn get_dx_files(base_path: PathBuf) -> Result<Vec<PathBuf>, SerializationError> 
     Ok(dx_files)
 }
 
-pub fn create_new_config_file(base_path: PathBuf, endpoint: Endpoint) -> Result<PathBuf, SerializationError> {
+pub fn create_new_config_file(
+    base_path: PathBuf,
+    endpoint: Endpoint,
+) -> Result<PathBuf, SerializationError> {
     let mut config = RuntimeConfig::new_with_endpoint(endpoint.clone());
 
     // add default interface
-    config.add_interface("websocket-client".to_string(), WebSocketClientInterfaceSetupData {
-        address: "wss://example.unyt.land".to_string(),
-    })?;
+    config.add_interface(
+        "websocket-client".to_string(),
+        WebSocketClientInterfaceSetupData {
+            address: "wss://example.unyt.land".to_string(),
+        },
+    )?;
 
     let mut config_path = base_path.clone();
     config_path.push(".datex");
     config_path.push(format!("{endpoint}.dx"));
     let config = to_value_container(&config)?;
-    let datex_script = decompile_value(&config, DecompileOptions {formatting: Formatting::multiline(), ..DecompileOptions::default()});
-    fs::write(config_path.clone(), datex_script).map_err(|e| {
-        SerializationError(e.to_string())
-    })?;
+    let datex_script = decompile_value(
+        &config,
+        DecompileOptions {
+            formatting: Formatting::multiline(),
+            ..DecompileOptions::default()
+        },
+    );
+    fs::write(config_path.clone(), datex_script).map_err(|e| SerializationError(e.to_string()))?;
 
     println!("Created new config file for {endpoint} at {config_path:?}");
 
     Ok(config_path)
 }
 
-pub fn get_config(custom_config_path: Option<PathBuf>) -> Result<RuntimeConfig, SerializationError> {
+pub fn get_config(
+    custom_config_path: Option<PathBuf>,
+) -> Result<RuntimeConfig, SerializationError> {
     Ok(match custom_config_path {
         Some(path) => read_config_file(path)?,
         None => {
@@ -79,23 +89,25 @@ pub fn get_config(custom_config_path: Option<PathBuf>) -> Result<RuntimeConfig, 
                         let endpoint = Endpoint::random();
                         let config_path = create_new_config_file(path.clone(), endpoint)?;
                         read_config_file(config_path)?
-                    }
-                    else {
+                    } else {
                         // if there are files, read the first one
                         let config_path = dx_files.first().unwrap().clone();
                         read_config_file(config_path)?
                     }
-                },
+                }
                 _ => {
                     eprintln!("Unable to get home directory, using temporary endpoint.");
                     RuntimeConfig::new_with_endpoint(Endpoint::random())
                 }
             }
-        },
+        }
     })
 }
 
-pub async fn create_runtime_with_config(custom_config_path: Option<PathBuf>, force_debug: bool) -> Result<Runtime, SerializationError> {
+pub async fn create_runtime_with_config(
+    custom_config_path: Option<PathBuf>,
+    force_debug: bool,
+) -> Result<Runtime, SerializationError> {
     let mut config = get_config(custom_config_path)?;
     // overwrite debug mode if force_debug is true
     if force_debug {

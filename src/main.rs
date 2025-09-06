@@ -18,7 +18,7 @@ use crate::lsp::Backend;
 use crate::repl::{ReplOptions, repl};
 use command_line_args::{Subcommands, get_command};
 use tower_lsp::{LspService, Server};
-use crate::utils::config::create_runtime_with_config;
+use crate::utils::config::{create_runtime_with_config, ConfigError};
 
 #[tokio::main]
 async fn main() {
@@ -55,7 +55,7 @@ async fn main() {
     }
 }
 
-async fn workbench(config_path: Option<PathBuf>, debug: bool) -> Result<(), SerializationError> {
+async fn workbench(config_path: Option<PathBuf>, debug: bool) -> Result<(), ConfigError> {
     set_global_context(GlobalContext {
         crypto: Arc::new(Mutex::new(CryptoNative)),
         time: Arc::new(Mutex::new(TimeNative)),

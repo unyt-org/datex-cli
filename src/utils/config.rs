@@ -5,28 +5,53 @@ use datex_core::network::com_interfaces::default_com_interfaces::websocket::webs
 use datex_core::runtime::{Runtime, RuntimeConfig};
 use datex_core::values::core_values::endpoint::Endpoint;
 use datex_core::values::serde::deserializer::DatexDeserializer;
-use datex_core::values::serde::error::SerializationError;
+use datex_core::values::serde::error::{DeserializationError, SerializationError};
 use datex_core::values::serde::serializer::to_value_container;
 use serde::Deserialize;
 
-pub fn read_config_file(path: PathBuf) -> Result<RuntimeConfig, SerializationError> {
+
+#[derive(Debug)]
+pub enum ConfigError {
+    SerializationError(SerializationError),
+    DeserializationError(DeserializationError),
+    IOError(std::io::Error),
+}
+
+impl From<SerializationError> for ConfigError {
+    fn from(err: SerializationError) -> Self {
+        ConfigError::SerializationError(err)
+    }
+}
+
+impl From<DeserializationError> for ConfigError {
+    fn from(err: DeserializationError) -> Self {
+        ConfigError::DeserializationError(err)
+    }
+}
+
+impl From<std::io::Error> for ConfigError {
+    fn from(err: std::io::Error) -> Self {
+        ConfigError::IOError(err)
+    }
+}
+
+pub fn read_config_file(path: PathBuf) -> Result<RuntimeConfig, ConfigError> {
     let deserializer = DatexDeserializer::from_dx_file(path)?;
     let config: RuntimeConfig = Deserialize::deserialize(deserializer)?;
     Ok(config)
 }
 
-fn get_dx_files(base_path: PathBuf) -> Result<Vec<PathBuf>, SerializationError> {
+fn get_dx_files(base_path: PathBuf) -> Result<Vec<PathBuf>, ConfigError> {
     let mut config_dir = base_path.clone();
     config_dir.push(".datex");
 
     // Create the directory if it doesn't exist
     if !config_dir.exists() {
-        fs::create_dir_all(&config_dir).map_err(|e| SerializationError(e.to_string()))?;
+        fs::create_dir_all(&config_dir)?;
     }
 
     // Collect all files ending with `.dx`
-    let dx_files = fs::read_dir(&config_dir)
-        .map_err(|e| SerializationError(e.to_string()))?
+    let dx_files = fs::read_dir(&config_dir)?
         .filter_map(|entry| {
             entry.ok().and_then(|e| {
                 let path = e.path();
@@ -45,7 +70,7 @@ fn get_dx_files(base_path: PathBuf) -> Result<Vec<PathBuf>, SerializationError> 
 pub fn create_new_config_file(
     base_path: PathBuf,
     endpoint: Endpoint,
-) -> Result<PathBuf, SerializationError> {
+) -> Result<PathBuf, ConfigError> {
     let mut config = RuntimeConfig::new_with_endpoint(endpoint.clone());
 
     // add default interface
@@ -67,7 +92,7 @@ pub fn create_new_config_file(
             ..DecompileOptions::default()
         },
     );
-    fs::write(config_path.clone(), datex_script).map_err(|e| SerializationError(e.to_string()))?;
+    fs::write(config_path.clone(), datex_script)?;
 
     println!("Created new config file for {endpoint} at {config_path:?}");
 
@@ -76,7 +101,7 @@ pub fn create_new_config_file(
 
 pub fn get_config(
     custom_config_path: Option<PathBuf>,
-) -> Result<RuntimeConfig, SerializationError> {
+) -> Result<RuntimeConfig, ConfigError> {
     Ok(match custom_config_path {
         Some(path) => read_config_file(path)?,
         None => {
@@ -107,7 +132,7 @@ pub fn get_config(
 pub async fn create_runtime_with_config(
     custom_config_path: Option<PathBuf>,
     force_debug: bool,
-) -> Result<Runtime, SerializationError> {
+) -> Result<Runtime, ConfigError> {
     let mut config = get_config(custom_config_path)?;
     // overwrite debug mode if force_debug is true
     if force_debug {

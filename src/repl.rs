@@ -1,4 +1,4 @@
-use crate::utils::config::create_runtime_with_config;
+use crate::utils::config::{create_runtime_with_config, ConfigError};
 use datex_core::crypto::crypto_native::CryptoNative;
 use datex_core::decompiler::{DecompileOptions, apply_syntax_highlighting, decompile_value};
 use datex_core::run_async;
@@ -6,7 +6,6 @@ use datex_core::runtime::execution_context::{ExecutionContext, ScriptExecutionEr
 use datex_core::runtime::global_context::{GlobalContext, set_global_context};
 use datex_core::utils::time_native::TimeNative;
 use datex_core::values::core_values::endpoint::Endpoint;
-use datex_core::values::serde::error::SerializationError;
 use rustyline::Helper;
 use rustyline::completion::Completer;
 use rustyline::config::Configurer;
@@ -85,7 +84,7 @@ pub struct ReplOptions {
 #[derive(Debug)]
 pub enum ReplError {
     ReadlineError(ReadlineError),
-    SerializationError(SerializationError),
+    ConfigError(ConfigError),
 }
 
 impl From<ReadlineError> for ReplError {
@@ -93,9 +92,9 @@ impl From<ReadlineError> for ReplError {
         ReplError::ReadlineError(err)
     }
 }
-impl From<SerializationError> for ReplError {
-    fn from(err: SerializationError) -> Self {
-        ReplError::SerializationError(err)
+impl From<ConfigError> for ReplError {
+    fn from(err: ConfigError) -> Self {
+        ReplError::ConfigError(err)
     }
 }
 

@@ -125,6 +125,16 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
                     let metadata = runtime.com_hub().get_metadata().to_string();
                     response_sender.send(ReplResponse::Result(Some(metadata))).await.unwrap();
                 }
+                ReplCommand::LocalMemoryDump => {
+                    let metadata = execution_context.memory_dump();
+                    if let Some(metadata) = metadata {
+                        let metadata = format!("Memory Dump:\n\n{metadata}");
+                        response_sender.send(ReplResponse::Result(Some(metadata))).await.unwrap();
+                    }
+                    else {
+                        response_sender.send(ReplResponse::Result(Some("<Memory dump not available>".to_string()))).await.unwrap();
+                    }
+                }
                 ReplCommand::Trace(endpoint) => {
                     let trace = runtime.com_hub().record_trace(endpoint).await;
                     match trace {
@@ -181,6 +191,7 @@ pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
 
 enum ReplCommand {
     ComHubInfo,
+    LocalMemoryDump,
     Trace(Endpoint),
     Execute(String),
 }
@@ -208,8 +219,11 @@ fn repl_loop(
                             rl.clear_screen().unwrap();
                             continue;
                         }
-                        "comhub" => {
+                        "com" => {
                             sender.blocking_send(ReplCommand::ComHubInfo).unwrap();
+                        }
+                        "mem" => {
+                            sender.blocking_send(ReplCommand::LocalMemoryDump).unwrap();
                         }
                         _ => {
                             // if starting with "trace", send trace command

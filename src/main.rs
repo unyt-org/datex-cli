@@ -57,8 +57,8 @@ async fn main() {
 
 async fn workbench(config_path: Option<PathBuf>, debug: bool) -> Result<(), ConfigError> {
     set_global_context(GlobalContext {
-        crypto: Arc::new(Mutex::new(CryptoNative)),
-        time: Arc::new(Mutex::new(TimeNative)),
+        crypto: Arc::new(CryptoNative),
+        time: Arc::new(TimeNative),
         debug_flags: DebugFlags::default(),
     });
 

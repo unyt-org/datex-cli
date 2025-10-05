@@ -100,8 +100,8 @@ impl From<ConfigError> for ReplError {
 
 pub async fn repl(options: ReplOptions) -> Result<(), ReplError> {
     set_global_context(GlobalContext::new(
-        Arc::new(Mutex::new(CryptoNative)),
-        Arc::new(Mutex::new(TimeNative)),
+        Arc::new(CryptoNative),
+        Arc::new(TimeNative),
     ));
 
     let (cmd_sender, mut cmd_receiver) = tokio::sync::mpsc::channel::<ReplCommand>(100);

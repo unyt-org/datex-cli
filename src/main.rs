@@ -2,10 +2,9 @@ use datex_core::crypto::crypto_native::CryptoNative;
 use datex_core::run_async;
 use datex_core::runtime::global_context::{DebugFlags, GlobalContext, set_global_context};
 use datex_core::runtime::{Runtime, RuntimeConfig};
-use datex_core::serde::error::SerializationError;
 use datex_core::utils::time_native::TimeNative;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 mod command_line_args;
 mod lsp;

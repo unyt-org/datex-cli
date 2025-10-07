@@ -1,24 +1,24 @@
 use datex_core::crypto::crypto_native::CryptoNative;
-use datex_core::runtime::global_context::{set_global_context, DebugFlags, GlobalContext};
+use datex_core::run_async;
+use datex_core::runtime::global_context::{DebugFlags, GlobalContext, set_global_context};
 use datex_core::runtime::{Runtime, RuntimeConfig};
+use datex_core::serde::error::SerializationError;
+use datex_core::utils::time_native::TimeNative;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use datex_core::run_async;
-use datex_core::utils::time_native::TimeNative;
-use datex_core::values::serde::error::SerializationError;
 
 mod command_line_args;
 mod lsp;
 mod repl;
-mod workbench;
 mod utils;
+mod workbench;
 
 use crate::command_line_args::Repl;
 use crate::lsp::Backend;
 use crate::repl::{ReplOptions, repl};
+use crate::utils::config::{ConfigError, create_runtime_with_config};
 use command_line_args::{Subcommands, get_command};
 use tower_lsp::{LspService, Server};
-use crate::utils::config::{create_runtime_with_config, ConfigError};
 
 #[tokio::main]
 async fn main() {
@@ -41,7 +41,10 @@ async fn main() {
                 let runtime = Runtime::new(RuntimeConfig::default());
             }
             Subcommands::Repl(Repl { verbose, config }) => {
-                let options = ReplOptions { verbose, config_path: config };
+                let options = ReplOptions {
+                    verbose,
+                    config_path: config,
+                };
                 repl(options).await.unwrap();
             }
             Subcommands::Workbench(_) => {

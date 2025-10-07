@@ -1,14 +1,13 @@
-use std::fs;
-use std::path::PathBuf;
-use datex_core::decompiler::{decompile_value, DecompileOptions, Formatting};
+use datex_core::decompiler::{DecompileOptions, Formatting, decompile_value};
 use datex_core::network::com_interfaces::default_com_interfaces::websocket::websocket_common::WebSocketClientInterfaceSetupData;
 use datex_core::runtime::{Runtime, RuntimeConfig};
+use datex_core::serde::deserializer::DatexDeserializer;
+use datex_core::serde::error::{DeserializationError, SerializationError};
+use datex_core::serde::serializer::to_value_container;
 use datex_core::values::core_values::endpoint::Endpoint;
-use datex_core::values::serde::deserializer::DatexDeserializer;
-use datex_core::values::serde::error::{DeserializationError, SerializationError};
-use datex_core::values::serde::serializer::to_value_container;
 use serde::Deserialize;
-
+use std::fs;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub enum ConfigError {
@@ -99,9 +98,7 @@ pub fn create_new_config_file(
     Ok(config_path)
 }
 
-pub fn get_config(
-    custom_config_path: Option<PathBuf>,
-) -> Result<RuntimeConfig, ConfigError> {
+pub fn get_config(custom_config_path: Option<PathBuf>) -> Result<RuntimeConfig, ConfigError> {
     Ok(match custom_config_path {
         Some(path) => read_config_file(path)?,
         None => {

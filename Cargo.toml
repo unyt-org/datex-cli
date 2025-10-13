@@ -6,15 +6,15 @@ authors = [
     "Jonas Strehle <jonas@unyt.org>",
 ]
 license = "MIT"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2024"
 
 [dependencies]
 clap = { version = "4.0.23", features = ["derive"] }
-datex-core = { path = "../datex-core", version = "0.0.5", features = ["default", "debug"] }
+datex-core = { version = "0.0.6", features = ["default", "debug"] }
 
 tokio = { version = "1.17.0", features = ["full"] }
-tower-lsp = { version = "0.20.0", features = ["proposed"]}
+tower-lsp = { version = "0.20.0", features = ["proposed"] }
 serde = { version = "1.0", features = ["derive"] }
 rustyline = "15.0.0"
 ratatui = "0.29.0"

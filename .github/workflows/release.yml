@@ -118,9 +118,6 @@ jobs:
           pushd openssl-$OPENSSL_VER
       
           # Configure cross-compile
-          CC=x86_64-w64-mingw32-gcc \
-          AR=x86_64-w64-mingw32-ar \
-          RANLIB=x86_64-w64-mingw32-ranlib \
           ./Configure mingw64 --cross-compile-prefix=x86_64-w64-mingw32- \
             --prefix=/usr/x86_64-w64-mingw32 no-shared
           

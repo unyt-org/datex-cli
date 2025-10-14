@@ -87,6 +87,21 @@ jobs:
           # Verify pkg-config can find target libraries
           pkg-config --print-variables libudev || echo "libudev.pc not found"
 
+      - name: Install OpenSSL & pkg-config on Ubuntu
+        if: matrix.run_on == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev pkg-config
+
+      - name: Install OpenSSL & pkg-config on macOS
+        if: matrix.run_on == 'macos-latest'
+        run: |
+          brew update
+          brew install openssl@3 pkg-config
+          echo "OPENSSL_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$(brew --prefix openssl@3)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+
       - name: Set up Rust (nightly)
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -115,18 +130,7 @@ jobs:
 
       - name: Build binary
         run: |
-          case "${{ matrix.target }}" in
-            x86_64-pc-windows-gnu|x86_64-apple-darwin)
-              echo "Building with vendored OpenSSL for ${{ matrix.target }}"
-              export OPENSSL_STATIC=1
-              export OPENSSL_NO_PKG_CONFIG=1
-              cargo build --release --target=${{ matrix.target }}
-              ;;
-            *)
-              echo "Building normally for ${{ matrix.target }}"
-              cargo build --release --target=${{ matrix.target }}
-              ;;
-          esac
+          cargo build --release --target=${{ matrix.target }}
 
       - name: Package binary
         run: |

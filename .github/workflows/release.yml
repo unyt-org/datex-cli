@@ -29,7 +29,7 @@ jobs:
           # macOS (x86 and Apple Silicon)
           - target: x86_64-apple-darwin
             os_name: macos-x86_64
-            run_on: macos-15
+            run_on: macos-latest
             ext: ''
           - target: aarch64-apple-darwin
             os_name: macos-aarch64
@@ -93,14 +93,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libssl-dev pkg-config
 
-      #- name: Install OpenSSL & pkg-config on macOS
-      #  if: matrix.target == 'x86_64-apple-darwin'
-      #  run: |
-      #    brew update
-      #    brew install openssl@3 pkg-config
-      #    echo "OPENSSL_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
-      #    echo "PKG_CONFIG_PATH=$(brew --prefix openssl@3)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
-      #    echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+      - name: Install OpenSSL & pkg-config on macOS
+        if: matrix.target == 'x86_64-apple-darwin'
+        run: |
+          # Ensure Rosetta is installed
+          softwareupdate --install-rosetta --agree-to-license || true
+          if [ ! -d /usr/local/Homebrew ]; then
+            arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          fi
+          
+          # install x86 openssl
+          arch -x86_64 /usr/local/bin/brew update
+          arch -x86_64 /usr/local/bin/brew install openssl@3 pkg-config
+      
+          # Export x86 OpenSSL env vars
+          echo "OPENSSL_DIR=/usr/local/opt/openssl@3" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/local/opt/openssl@3/lib/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_LIBDIR=/usr/local/opt/openssl@3/lib/pkgconfig" >> $GITHUB_ENV
 
       - name: Set up Rust (nightly)
         uses: dtolnay/rust-toolchain@stable

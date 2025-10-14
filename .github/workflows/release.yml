@@ -117,21 +117,26 @@ jobs:
           tar xf openssl-$OPENSSL_VER.tar.gz
           pushd openssl-$OPENSSL_VER
       
-          # Build OpenSSL for Windows x86_64 with shared libraries
-          ./Configure mingw64 \
-            --cross-compile-prefix=x86_64-w64-mingw32- \
-            --prefix=/usr/x86_64-w64-mingw32 \
-            shared no-tests
-      
+          # Configure cross-compile
+          CC=x86_64-w64-mingw32-gcc \
+          AR=x86_64-w64-mingw32-ar \
+          RANLIB=x86_64-w64-mingw32-ranlib \
+          ./Configure mingw64 --cross-compile-prefix=x86_64-w64-mingw32- \
+            --prefix=/usr/x86_64-w64-mingw32 no-shared
+          
+          # Build static libraries
           make -j$(nproc)
+          
+          # Install to user-writable DESTDIR
           make DESTDIR=$HOME/win-openssl install_sw
-
           popd
-      
-          # Export environment variables for openssl-sys
+          
+          # Set environment variables for openssl-sys
           echo "OPENSSL_DIR=$HOME/win-openssl/usr/x86_64-w64-mingw32" >> $GITHUB_ENV
           echo "OPENSSL_LIB_DIR=$HOME/win-openssl/usr/x86_64-w64-mingw32/lib" >> $GITHUB_ENV
           echo "OPENSSL_INCLUDE_DIR=$HOME/win-openssl/usr/x86_64-w64-mingw32/include" >> $GITHUB_ENV
+          
+          # For pkg-config
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
           echo "PKG_CONFIG_LIBDIR=$HOME/win-openssl/usr/x86_64-w64-mingw32/lib/pkgconfig" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=$HOME/win-openssl/usr/x86_64-w64-mingw32/lib/pkgconfig" >> $GITHUB_ENV

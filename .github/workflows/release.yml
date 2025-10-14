@@ -120,7 +120,7 @@ jobs:
               echo "Building with vendored OpenSSL for ${{ matrix.target }}"
               export OPENSSL_STATIC=1
               export OPENSSL_NO_PKG_CONFIG=1
-              cargo build --release --target=${{ matrix.target }} --features openssl/vendored
+              cargo build --release --target=${{ matrix.target }}
               ;;
             *)
               echo "Building normally for ${{ matrix.target }}"

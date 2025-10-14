@@ -87,12 +87,6 @@ jobs:
           # Verify pkg-config can find target libraries
           pkg-config --print-variables libudev || echo "libudev.pc not found"
 
-      - name: Install OpenSSL & pkg-config on Ubuntu
-        if: matrix.run_on == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libssl-dev pkg-config
-
       - name: Install OpenSSL on macOS
         if: matrix.target == 'x86_64-apple-darwin'
         run: |
@@ -130,21 +124,17 @@ jobs:
             shared no-tests
       
           make -j$(nproc)
-          mkdir -p /usr/x86_64-w64-mingw32/{bin,lib,include}
-          make DESTDIR=/usr/x86_64-w64-mingw32 install_sw
-
-          ls /usr/x86_64-w64-mingw32/lib/libssl*
-          ls /usr/x86_64-w64-mingw32/lib/libcrypto*
+          make DESTDIR=$HOME/win-openssl install_sw
 
           popd
       
           # Export environment variables for openssl-sys
-          echo "OPENSSL_DIR=/usr/x86_64-w64-mingw32" >> $GITHUB_ENV
-          echo "OPENSSL_LIB_DIR=/usr/x86_64-w64-mingw32/lib" >> $GITHUB_ENV
-          echo "OPENSSL_INCLUDE_DIR=/usr/x86_64-w64-mingw32/include" >> $GITHUB_ENV
+          echo "OPENSSL_DIR=$HOME/win-openssl/usr/x86_64-w64-mingw32" >> $GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=$HOME/win-openssl/usr/x86_64-w64-mingw32/lib" >> $GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=$HOME/win-openssl/usr/x86_64-w64-mingw32/include" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-          echo "PKG_CONFIG_LIBDIR=/usr/x86_64-w64-mingw32/lib/pkgconfig" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=/usr/x86_64-w64-mingw32/lib/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_LIBDIR=$HOME/win-openssl/usr/x86_64-w64-mingw32/lib/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$HOME/win-openssl/usr/x86_64-w64-mingw32/lib/pkgconfig" >> $GITHUB_ENV
           
       - name: Set up Rust (nightly)
         uses: dtolnay/rust-toolchain@stable

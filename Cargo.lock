@@ -843,6 +843,8 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 [[package]]
 name = "datex-core"
 version = "0.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43b45f844946d7722ef155e91be17f357c1384e2b001cb5820c8c63354da43dd"
 dependencies = [
  "ariadne",
  "async-stream",
@@ -924,6 +926,8 @@ dependencies = [
 [[package]]
 name = "datex_macros"
 version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1922189d0e176d0b815a911357b3c20fc878512496928dc13b72c281aa6ecee"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -130,7 +130,12 @@ jobs:
             shared no-tests
       
           make -j$(nproc)
-          sudo make install_sw
+          mkdir -p /usr/x86_64-w64-mingw32/{bin,lib,include}
+          make DESTDIR=/usr/x86_64-w64-mingw32 install_sw
+
+          ls /usr/x86_64-w64-mingw32/lib/libssl*
+          ls /usr/x86_64-w64-mingw32/lib/libcrypto*
+
           popd
       
           # Export environment variables for openssl-sys
